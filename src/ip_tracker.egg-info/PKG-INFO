@@ -1,3 +1,16 @@
+Metadata-Version: 2.4
+Name: ip-tracker
+Version: 0.1.0
+Summary: IP address tracking system
+Author-email: Aadish Bahati <aadish.bahati@essentialenergy.com.au>
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+Requires-Dist: black>=22.0.0; extra == "dev"
+Requires-Dist: flake8>=4.0.0; extra == "dev"
+Requires-Dist: isort>=5.0.0; extra == "dev"
+Requires-Dist: mypy>=0.950; extra == "dev"
+
 # IP Tracker
 
 A simple IP address tracking system for monitoring and analyzing IP addresses.
