@@ -169,6 +169,19 @@ function renderSupernets() {
     supernets.forEach(supernet => {
         const utilizationClass = getUtilizationClass(supernet.utilization || 0);
         const row = document.createElement('tr');
+        
+        let subnetDisplay = '';
+        if (supernet.subnet_count > 0) {
+            subnetDisplay = `
+                <span class="badge bg-primary">${supernet.subnet_count} subnet${supernet.subnet_count > 1 ? 's' : ''}</span>
+                <button class="btn btn-sm btn-outline-info ms-1" onclick="toggleSubnetDetails(${supernet.id})" title="View subnets">
+                    <i class="bi bi-eye"></i>
+                </button>
+            `;
+        } else {
+            subnetDisplay = '<span class="text-muted">No subnets</span>';
+        }
+        
         row.innerHTML = `
             <td><span class="network-cidr">${supernet.network}</span></td>
             <td>${supernet.name || '-'}</td>
@@ -176,6 +189,7 @@ function renderSupernets() {
             <td><span class="ip-address">${supernet.start_ip}</span></td>
             <td><span class="ip-address">${supernet.end_ip}</span></td>
             <td>${supernet.total_hosts.toLocaleString()}</td>
+            <td>${subnetDisplay}</td>
             <td>
                 <div class="d-flex align-items-center">
                     <div class="utilization-bar me-2" style="width: 60px;">
@@ -192,6 +206,10 @@ function renderSupernets() {
                 </button>
             </td>
         `;
+        
+        row.dataset.supernetId = supernet.id;
+        row.dataset.subnets = JSON.stringify(supernet.subnets || []);
+        
         tbody.appendChild(row);
     });
 }
