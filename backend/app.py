@@ -172,7 +172,6 @@ def handle_supernets():
         supernets = conn.execute(
             "SELECT * FROM supernets ORDER BY created_at DESC"
         ).fetchall()
-        conn.close()
 
         result = []
         for supernet in supernets:
@@ -209,7 +208,8 @@ def handle_supernets():
                 )
             except ipaddress.NetmaskValueError:
                 continue
-
+        
+        conn.close()
         return jsonify(result)
 
     elif request.method == "POST":
