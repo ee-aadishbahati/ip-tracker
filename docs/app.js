@@ -70,9 +70,9 @@ async function loadDashboard() {
     try {
         const stats = await apiCall('/api/dashboard');
         
-        document.getElementById('supernetCount').textContent = stats.supernets || 0;
-        document.getElementById('subnetCount').textContent = stats.subnets || 0;
-        document.getElementById('deviceCount').textContent = stats.devices || 0;
+        document.getElementById('supernetCount').textContent = stats.supernet_count || 0;
+        document.getElementById('subnetCount').textContent = stats.subnet_count || 0;
+        document.getElementById('deviceCount').textContent = stats.device_count || 0;
         document.getElementById('avgUtilization').textContent = (stats.avg_utilization || 0) + '%';
         
         await loadSupernets();
@@ -101,6 +101,19 @@ function renderSupernets() {
     
     supernets.forEach(supernet => {
         const row = document.createElement('tr');
+        
+        let subnetDisplay = '';
+        if (supernet.subnet_count > 0) {
+            subnetDisplay = `
+                <span class="badge bg-primary">${supernet.subnet_count} subnet${supernet.subnet_count > 1 ? 's' : ''}</span>
+                <button class="btn btn-sm btn-outline-info ms-1" onclick="toggleSubnetDetails(${supernet.id})" title="View subnets">
+                    <i class="bi bi-eye"></i>
+                </button>
+            `;
+        } else {
+            subnetDisplay = '<span class="text-muted">No subnets</span>';
+        }
+        
         row.innerHTML = `
             <td><code>${supernet.network}</code></td>
             <td>${supernet.name}</td>
@@ -108,6 +121,7 @@ function renderSupernets() {
             <td><code>${supernet.start_ip}</code></td>
             <td><code>${supernet.end_ip}</code></td>
             <td>${supernet.total_hosts.toLocaleString()}</td>
+            <td>${subnetDisplay}</td>
             <td>${new Date(supernet.created_at).toLocaleDateString()}</td>
             <td>
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteSupernet(${supernet.id})">
@@ -115,6 +129,10 @@ function renderSupernets() {
                 </button>
             </td>
         `;
+        
+        row.dataset.supernetId = supernet.id;
+        row.dataset.subnets = JSON.stringify(supernet.subnets || []);
+        
         tbody.appendChild(row);
     });
 }
@@ -562,4 +580,42 @@ function calculateAverageUtilization(subnets) {
     });
     
     return validSubnets > 0 ? Math.round(totalUtilization / validSubnets) : 0;
+}
+
+function toggleSubnetDetails(supernetId) {
+    const row = document.querySelector(`tr[data-supernet-id="${supernetId}"]`);
+    if (!row) return;
+    
+    const existingDetailsRow = row.nextElementSibling;
+    if (existingDetailsRow && existingDetailsRow.classList.contains('subnet-details-row')) {
+        existingDetailsRow.remove();
+        return;
+    }
+    
+    const subnets = JSON.parse(row.dataset.subnets || '[]');
+    if (subnets.length === 0) return;
+    
+    const detailsRow = document.createElement('tr');
+    detailsRow.classList.add('subnet-details-row');
+    detailsRow.innerHTML = `
+        <td colspan="9" class="bg-light">
+            <div class="p-3">
+                <h6 class="mb-2">Subnets in this supernet:</h6>
+                <div class="row">
+                    ${subnets.map(subnet => `
+                        <div class="col-md-4 mb-2">
+                            <div class="card card-body py-2">
+                                <small>
+                                    <strong><code>${subnet.network}</code></strong><br>
+                                    <span class="text-muted">${subnet.name}</span>
+                                </small>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </td>
+    `;
+    
+    row.parentNode.insertBefore(detailsRow, row.nextSibling);
 }

@@ -178,6 +178,20 @@ def handle_supernets():
         for supernet in supernets:
             try:
                 network = ipaddress.ip_network(supernet["network"], strict=False)
+                
+                subnets = conn.execute(
+                    "SELECT id, network, name FROM subnets WHERE supernet_id = ? ORDER BY created_at",
+                    (supernet["id"],)
+                ).fetchall()
+                
+                subnet_list = []
+                for subnet in subnets:
+                    subnet_list.append({
+                        "id": subnet["id"],
+                        "network": subnet["network"],
+                        "name": subnet["name"]
+                    })
+                
                 result.append(
                     {
                         "id": supernet["id"],
@@ -189,6 +203,8 @@ def handle_supernets():
                         "total_hosts": network.num_addresses
                         - 2,  # Exclude network and broadcast
                         "created_at": supernet["created_at"],
+                        "subnet_count": len(subnet_list),
+                        "subnets": subnet_list,
                     }
                 )
             except ipaddress.NetmaskValueError:
