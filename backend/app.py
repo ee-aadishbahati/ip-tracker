@@ -19,8 +19,15 @@ DATABASE = os.getenv("DATABASE_PATH", "/app/data/ip_tracker.db")
 def get_db_connection():
     """Get database connection with row factory for dict-like access."""
     try:
-        conn = sqlite3.connect(DATABASE)
+        conn = sqlite3.connect(DATABASE, timeout=30.0)
         conn.row_factory = sqlite3.Row
+        
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA cache_size=1000")
+        conn.execute("PRAGMA temp_store=memory")
+        conn.execute("PRAGMA foreign_keys=ON")
+        
         return conn
     except Exception as e:
         print(f"Database connection error: {e}")
@@ -30,14 +37,25 @@ def get_db_connection():
 def init_database():
     """Initialize the database with required tables."""
     import os
+    import time
     
     db_dir = os.path.dirname(DATABASE)
     os.makedirs(db_dir, exist_ok=True)
     print(f"Database directory ensured: {db_dir}")
     
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            conn = get_db_connection()
+            print(f"Database initialized at: {DATABASE} (attempt {attempt + 1})")
+            break
+        except Exception as e:
+            print(f"Database connection attempt {attempt + 1} failed: {e}")
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(1)
+    
     try:
-        conn = get_db_connection()
-        print(f"Database initialized at: {DATABASE}")
 
         conn.execute(
         """
@@ -1177,6 +1195,48 @@ def get_changelog():
         return jsonify(changelog)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    """Health check endpoint to verify database connectivity."""
+    try:
+        conn = get_db_connection()
+        
+        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        required_tables = ['supernets', 'subnets', 'devices', 'change_log']
+        
+        missing_tables = [table for table in required_tables if table not in tables]
+        if missing_tables:
+            return jsonify({
+                "status": "error",
+                "message": f"Missing tables: {missing_tables}",
+                "database_path": DATABASE
+            }), 500
+        
+        cursor = conn.execute("SELECT COUNT(*) as count FROM supernets")
+        supernet_count = cursor.fetchone()[0]
+        
+        cursor = conn.execute("SELECT COUNT(*) as count FROM subnets")
+        subnet_count = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({
+            "status": "healthy",
+            "database_path": DATABASE,
+            "tables": tables,
+            "supernet_count": supernet_count,
+            "subnet_count": subnet_count
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "database_path": DATABASE
+        }), 500
 
 
 if __name__ == "__main__":
