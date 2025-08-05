@@ -259,7 +259,7 @@ function renderSubnets() {
                     <div class="utilization-bar me-2" style="width: 60px;">
                         <div class="utilization-fill ${utilizationClass}" style="width: ${subnet.utilization}%"></div>
                     </div>
-                    <span class="badge bg-${utilizationClass.replace('utilization-', '')}">${subnet.utilization}%</span>
+                    <span class="badge bg-${utilizationClass.replace('utilization-', '')}" style="color: black !important;">${subnet.utilization}%</span>
                 </div>
             </td>
             <td>${subnet.available_ips}</td>
