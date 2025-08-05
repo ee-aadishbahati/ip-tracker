@@ -81,6 +81,57 @@
             </div>
         </div>
 
+        <!-- Enhanced Dashboard Metrics -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card" id="networkHealthCard">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Network Health</h5>
+                                <h3 id="networkHealth">Healthy</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-shield-check fs-1" id="healthIcon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Critical Subnets</h5>
+                                <h3 id="criticalCount">0</h3>
+                                <small id="criticalDetails">≥90% utilization</small>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-exclamation-triangle fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title">Warning Subnets</h5>
+                                <h3 id="warningCount">0</h3>
+                                <small id="warningDetails">75-89% utilization</small>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-exclamation-circle fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <ul class="nav nav-tabs" id="mainTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="supernets-tab" data-bs-toggle="tab" data-bs-target="#supernets" type="button" role="tab">
@@ -122,6 +173,8 @@
                                         <th>Start IP</th>
                                         <th>End IP</th>
                                         <th>Total Hosts</th>
+                                        <th>Utilization</th>
+                                        <th>Available IPs</th>
                                         <th>Created</th>
                                         <th>Actions</th>
                                     </tr>
