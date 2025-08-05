@@ -1,3 +1,5 @@
+const API_BASE_URL = 'https://ip-tracker.fly.dev';
+
 let supernets = [];
 let subnets = [];
 let devices = [];
@@ -51,7 +53,7 @@ function setupEventListeners() {
 
 async function loadDashboard() {
     try {
-        const response = await fetch('/api/dashboard');
+        const response = await fetch(`${API_BASE_URL}/api/dashboard`);
         dashboardStats = await response.json();
         
         document.getElementById('supernetCount').textContent = dashboardStats.supernet_count;
@@ -119,7 +121,7 @@ function calculateAvgUtilization() {
 
 async function loadSupernets() {
     try {
-        const response = await fetch('/api/supernets');
+        const response = await fetch(`${API_BASE_URL}/api/supernets`);
         supernets = await response.json();
         renderSupernets();
         populateSupernetDropdowns();
@@ -130,7 +132,7 @@ async function loadSupernets() {
 
 async function loadSubnets() {
     try {
-        const response = await fetch('/api/subnets');
+        const response = await fetch(`${API_BASE_URL}/api/subnets`);
         subnets = await response.json();
         renderSubnets();
         populateSubnetDropdowns();
@@ -142,7 +144,7 @@ async function loadSubnets() {
 
 async function loadDevices() {
     try {
-        const response = await fetch('/api/devices');
+        const response = await fetch(`${API_BASE_URL}/api/devices`);
         devices = await response.json();
         renderDevices();
     } catch (error) {
@@ -152,7 +154,7 @@ async function loadDevices() {
 
 async function loadChangelog() {
     try {
-        const response = await fetch('/api/dashboard');
+        const response = await fetch(`${API_BASE_URL}/api/dashboard`);
         const data = await response.json();
         renderChangelog(data.recent_changes);
     } catch (error) {
@@ -393,7 +395,7 @@ async function saveSupernet() {
     };
     
     try {
-        const response = await fetch('/api/supernets', {
+        const response = await fetch(`${API_BASE_URL}/api/supernets`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -437,7 +439,7 @@ async function saveSubnet() {
         };
         
         try {
-            const response = await fetch('/api/subnets', {
+            const response = await fetch(`${API_BASE_URL}/api/subnets`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -478,7 +480,7 @@ async function saveSubnet() {
         }
         
         try {
-            const response = await fetch(`/api/supernets/${supernetId}/allocate`, {
+            const response = await fetch(`${API_BASE_URL}/api/supernets/${supernetId}/allocate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -516,7 +518,7 @@ async function saveDevice() {
     };
     
     try {
-        const response = await fetch('/api/devices', {
+        const response = await fetch(`${API_BASE_URL}/api/devices`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -542,7 +544,7 @@ async function deleteSupernet(id) {
     }
     
     try {
-        const response = await fetch(`/api/supernets/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/supernets/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (response.ok) {
@@ -562,7 +564,7 @@ async function deleteSubnet(id) {
     }
     
     try {
-        const response = await fetch(`/api/subnets/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/subnets/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (response.ok) {
@@ -582,7 +584,7 @@ async function deleteDevice(id) {
     }
     
     try {
-        const response = await fetch(`/api/devices/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/devices/${id}`, { method: 'DELETE' });
         const result = await response.json();
         
         if (response.ok) {
@@ -598,7 +600,7 @@ async function deleteDevice(id) {
 
 async function exportData() {
     try {
-        const response = await fetch('/api/export');
+        const response = await fetch(`${API_BASE_URL}/api/export`);
         const blob = await response.blob();
         
         const url = window.URL.createObjectURL(blob);
@@ -636,7 +638,7 @@ async function importData() {
     formData.append('type', dataType);
     
     try {
-        const response = await fetch('/api/import', {
+        const response = await fetch(`${API_BASE_URL}/api/import`, {
             method: 'POST',
             body: formData
         });
