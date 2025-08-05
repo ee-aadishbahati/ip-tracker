@@ -81,6 +81,13 @@ body {
     font-weight: 500;
 }
 
+/* Utilization badge text visibility fix */
+.badge.bg-low,
+.badge.bg-medium,
+.badge.bg-high {
+    color: black !important;
+}
+
 .utilization-bar {
     height: 8px;
     border-radius: 4px;

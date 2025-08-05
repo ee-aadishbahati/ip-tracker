@@ -85,6 +85,13 @@
     font-size: 0.75em;
 }
 
+/* Utilization badge text visibility fix */
+.badge.bg-low,
+.badge.bg-medium,
+.badge.bg-high {
+    color: black !important;
+}
+
 /* Utility classes */
 .text-truncate {
     max-width: 200px;
