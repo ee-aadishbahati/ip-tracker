@@ -12,21 +12,34 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-DATABASE = "/app/data/ip_tracker.db"
+import os
+DATABASE = os.getenv("DATABASE_PATH", "/app/data/ip_tracker.db")
 
 
 def get_db_connection():
     """Get database connection with row factory for dict-like access."""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        return conn
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        raise
 
 
 def init_database():
     """Initialize the database with required tables."""
-    conn = get_db_connection()
+    import os
+    
+    db_dir = os.path.dirname(DATABASE)
+    os.makedirs(db_dir, exist_ok=True)
+    print(f"Database directory ensured: {db_dir}")
+    
+    try:
+        conn = get_db_connection()
+        print(f"Database initialized at: {DATABASE}")
 
-    conn.execute(
+        conn.execute(
         """
         CREATE TABLE IF NOT EXISTS supernets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,54 +51,60 @@ def init_database():
     """
     )
 
-    conn.execute(
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS subnets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                supernet_id INTEGER,
+                network TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                purpose TEXT,
+                assigned_to TEXT,
+                gateway TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (supernet_id) REFERENCES supernets (id)
+            )
         """
-        CREATE TABLE IF NOT EXISTS subnets (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            supernet_id INTEGER,
-            network TEXT NOT NULL UNIQUE,
-            name TEXT NOT NULL,
-            purpose TEXT,
-            assigned_to TEXT,
-            gateway TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (supernet_id) REFERENCES supernets (id)
         )
-    """
-    )
 
-    conn.execute(
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS devices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                subnet_id INTEGER,
+                device_name TEXT NOT NULL,
+                role TEXT,
+                location TEXT,
+                ip_address TEXT NOT NULL UNIQUE,
+                hostname TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (subnet_id) REFERENCES subnets (id)
+            )
         """
-        CREATE TABLE IF NOT EXISTS devices (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            subnet_id INTEGER,
-            device_name TEXT NOT NULL,
-            role TEXT,
-            location TEXT,
-            ip_address TEXT NOT NULL UNIQUE,
-            hostname TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (subnet_id) REFERENCES subnets (id)
         )
-    """
-    )
 
-    conn.execute(
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS change_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action TEXT NOT NULL,
+                object_type TEXT NOT NULL,
+                object_id INTEGER,
+                details TEXT,
+                user_name TEXT DEFAULT 'system',
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         """
-        CREATE TABLE IF NOT EXISTS change_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            action TEXT NOT NULL,
-            object_type TEXT NOT NULL,
-            object_id INTEGER,
-            details TEXT,
-            user_name TEXT DEFAULT 'system',
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """
-    )
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        raise
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 
 def log_change(
