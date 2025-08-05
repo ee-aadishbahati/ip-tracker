@@ -18,3 +18,7 @@ primary_region = "syd"
 
 [env]
   FLASK_ENV = "production"
+
+[mounts]
+  source = "ip_tracker_data"
+  destination = "/app/data"
