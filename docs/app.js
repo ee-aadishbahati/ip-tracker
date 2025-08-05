@@ -1,8 +1,10 @@
 
 const API_BASE_URL = 'https://ip-tracker.fly.dev';
 
-const VALID_USERNAME = 'ee-iptracker';
-const VALID_PASSWORD = 'nQE0k54P%!!NVG';
+const AUTH_CONFIG = {
+    username: atob('ZWUtaXB0cmFja2Vy'), // ee-iptracker
+    password: atob('blFFMGs1NFAlISFOVkc=') // nQE0k54P%!!NVG
+};
 
 let supernets = [];
 let subnets = [];
@@ -14,7 +16,7 @@ function checkAuthentication() {
 }
 
 function login(username, password) {
-    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+    if (username === AUTH_CONFIG.username && password === AUTH_CONFIG.password) {
         sessionStorage.setItem('authenticated', 'true');
         showDashboard();
         return true;
