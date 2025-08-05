@@ -5,14 +5,26 @@ A Flask web application for managing IP address allocations and subnet managemen
 
 import ipaddress
 import sqlite3
+import os
+from functools import wraps
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, session, redirect, url_for
 from flask_cors import CORS
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 CORS(app)
 
 DATABASE = "ip_tracker.db"
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("logged_in"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def get_db_connection():
@@ -200,13 +212,42 @@ def find_available_subnet(supernet_id: int, prefix_length: int) -> str | None:
     return None  # No available subnet found
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    """Login page and authentication."""
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        
+        valid_username = os.environ.get("LOGIN_USERNAME", "admin")
+        valid_password = os.environ.get("LOGIN_PASSWORD", "password")
+        
+        if username == valid_username and password == valid_password:
+            session["logged_in"] = True
+            session["username"] = username
+            return redirect(url_for("index"))
+        else:
+            return render_template("login.html", error="Invalid credentials")
+    
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    """Logout and clear session."""
+    session.clear()
+    return redirect(url_for("login"))
+
+
 @app.route("/")
+@login_required
 def index():
     """Main dashboard page."""
     return render_template("index.html")
 
 
 @app.route("/api/supernets", methods=["GET", "POST"])
+@login_required
 def handle_supernets():
     """Handle supernet operations."""
     if request.method == "GET":
@@ -271,6 +312,7 @@ def handle_supernets():
 
 
 @app.route("/api/subnets", methods=["GET", "POST"])
+@login_required
 def handle_subnets():
     """Handle subnet operations."""
     if request.method == "GET":
@@ -402,6 +444,7 @@ def handle_subnets():
 
 
 @app.route("/api/supernets/<int:supernet_id>/allocate", methods=["POST"])
+@login_required
 def allocate_subnet(supernet_id):
     """Intelligently allocate a subnet within a supernet."""
     data = request.get_json()
@@ -474,6 +517,7 @@ def allocate_subnet(supernet_id):
 
 
 @app.route("/api/devices", methods=["GET", "POST"])
+@login_required
 def handle_devices():
     """Handle device operations."""
     if request.method == "GET":
@@ -568,6 +612,7 @@ def handle_devices():
 
 
 @app.route("/api/supernets/<int:supernet_id>", methods=["DELETE"])
+@login_required
 def delete_supernet(supernet_id):
     """Delete a supernet and all associated subnets and devices."""
     conn = get_db_connection()
@@ -603,6 +648,7 @@ def delete_supernet(supernet_id):
 
 
 @app.route("/api/subnets/<int:subnet_id>", methods=["DELETE"])
+@login_required
 def delete_subnet(subnet_id):
     """Delete a subnet and all associated devices."""
     conn = get_db_connection()
@@ -626,6 +672,7 @@ def delete_subnet(subnet_id):
 
 
 @app.route("/api/devices/<int:device_id>", methods=["DELETE"])
+@login_required
 def delete_device(device_id):
     """Delete a device."""
     conn = get_db_connection()
@@ -653,6 +700,7 @@ def delete_device(device_id):
 
 
 @app.route("/api/export")
+@login_required
 def export_data():
     """Export all data to CSV format."""
     import csv
@@ -746,6 +794,7 @@ def export_data():
 
 
 @app.route("/api/import", methods=["POST"])
+@login_required
 def import_data():
     """Import data from CSV file."""
     import csv
@@ -875,6 +924,7 @@ def import_data():
 
 
 @app.route("/api/dashboard")
+@login_required
 def dashboard_stats():
     """Get dashboard statistics."""
     conn = get_db_connection()

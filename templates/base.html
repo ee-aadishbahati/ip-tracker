@@ -19,6 +19,12 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    {% if session.logged_in %}
+                    <li class="nav-item">
+                        <span class="navbar-text me-3">
+                            <i class="bi bi-person"></i> Welcome, {{ session.username }}
+                        </span>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" onclick="exportData()">
                             <i class="bi bi-download"></i> Export
@@ -29,6 +35,12 @@
                             <i class="bi bi-upload"></i> Import
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
