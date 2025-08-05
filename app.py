@@ -8,7 +8,10 @@ import sqlite3
 import os
 from functools import wraps
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for
+
+load_dotenv()
 from flask_cors import CORS
 
 app = Flask(__name__)
