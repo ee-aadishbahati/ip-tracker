@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Tracker Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-router"></i> IP Tracker
+            </a>
+            <div class="navbar-nav ms-auto">
+                <button class="btn btn-outline-light me-2" onclick="exportData()">
+                    <i class="bi bi-download"></i> Export
+                </button>
+                <button class="btn btn-outline-light" onclick="showImportModal()">
+                    <i class="bi bi-upload"></i> Import
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="h3 mb-3">
+                    <i class="bi bi-speedometer2"></i> IP Tracker Dashboard
+                </h1>
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-primary" onclick="showSupernetModal()">
+                        <i class="bi bi-plus-circle"></i> Add Supernet
+                    </button>
+                    <button class="btn btn-success" onclick="showSubnetModal()">
+                        <i class="bi bi-plus-circle"></i> Add Subnet
+                    </button>
+                    <button class="btn btn-info" onclick="showDeviceModal()">
+                        <i class="bi bi-plus-circle"></i> Add Device
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">Supernets</h4>
+                                <h2 id="supernetCount">0</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-globe fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">Subnets</h4>
+                                <h2 id="subnetCount">0</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-diagram-3 fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">Devices</h4>
+                                <h2 id="deviceCount">0</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-device-hdd fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">Avg Utilization</h4>
+                                <h2 id="avgUtilization">0%</h2>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="bi bi-pie-chart fs-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="supernets-tab" data-bs-toggle="tab" data-bs-target="#supernets" type="button" role="tab">
+                    <i class="bi bi-globe"></i> Supernets
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="subnets-tab" data-bs-toggle="tab" data-bs-target="#subnets" type="button" role="tab">
+                    <i class="bi bi-diagram-3"></i> Subnets
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="devices-tab" data-bs-toggle="tab" data-bs-target="#devices" type="button" role="tab">
+                    <i class="bi bi-device-hdd"></i> Devices
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="changelog-tab" data-bs-toggle="tab" data-bs-target="#changelog" type="button" role="tab">
+                    <i class="bi bi-clock-history"></i> Change Log
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainTabsContent">
+            <div class="tab-pane fade show active" id="supernets" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Supernets</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="supernetSearch" placeholder="Search supernets...">
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Network</th>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Start IP</th>
+                                        <th>End IP</th>
+                                        <th>Total Hosts</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="supernetsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="subnets" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Subnets</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="subnetSearch" placeholder="Search subnets...">
+                            </div>
+                            <div class="col-md-6">
+                                <select class="form-select" id="subnetSupernetFilter">
+                                    <option value="">All Supernets</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Network</th>
+                                        <th>Name</th>
+                                        <th>Purpose</th>
+                                        <th>Assigned To</th>
+                                        <th>Gateway</th>
+                                        <th>Start IP</th>
+                                        <th>End IP</th>
+                                        <th>Total Hosts</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="subnetsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="devices" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Devices</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" id="deviceSearch" placeholder="Search devices...">
+                            </div>
+                            <div class="col-md-6">
+                                <select class="form-select" id="deviceSubnetFilter">
+                                    <option value="">All Subnets</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Device Name</th>
+                                        <th>IP Address</th>
+                                        <th>Hostname</th>
+                                        <th>Role</th>
+                                        <th>Location</th>
+                                        <th>Subnet</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="devicesTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="changelog" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Change Log</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                        <th>Object Type</th>
+                                        <th>Details</th>
+                                        <th>User</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="changelogTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Supernet Modal -->
+    <div class="modal fade" id="supernetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Supernet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="supernetForm">
+                        <div class="mb-3">
+                            <label for="supernetNetwork" class="form-label">Network (CIDR)</label>
+                            <input type="text" class="form-control" id="supernetNetwork" placeholder="e.g., 10.10.0.0/16" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="supernetName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="supernetName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="supernetDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="supernetDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSupernetModal()">Save Supernet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Subnet Modal -->
+    <div class="modal fade" id="subnetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Subnet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="subnetForm">
+                        <div class="mb-3">
+                            <label for="subnetSupernet" class="form-label">Parent Supernet</label>
+                            <select class="form-select" id="subnetSupernet" required>
+                                <option value="">Select a supernet</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subnetNetwork" class="form-label">Subnet (CIDR)</label>
+                            <input type="text" class="form-control" id="subnetNetwork" placeholder="e.g., 10.10.1.0/24" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subnetName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="subnetName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subnetPurpose" class="form-label">Purpose</label>
+                            <input type="text" class="form-control" id="subnetPurpose">
+                        </div>
+                        <div class="mb-3">
+                            <label for="subnetAssignedTo" class="form-label">Assigned To</label>
+                            <input type="text" class="form-control" id="subnetAssignedTo">
+                        </div>
+                        <div class="mb-3">
+                            <label for="subnetGateway" class="form-label">Gateway IP</label>
+                            <input type="text" class="form-control" id="subnetGateway" placeholder="e.g., 10.10.1.1">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="saveSubnetModal()">Save Subnet</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div class="modal fade" id="deviceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Device</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="deviceForm">
+                        <div class="mb-3">
+                            <label for="deviceSubnet" class="form-label">Subnet</label>
+                            <select class="form-select" id="deviceSubnet" required>
+                                <option value="">Select a subnet</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="deviceName" class="form-label">Device Name</label>
+                            <input type="text" class="form-control" id="deviceName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="deviceIpAddress" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="deviceIpAddress" placeholder="e.g., 10.10.1.100" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="deviceHostname" class="form-label">Hostname</label>
+                            <input type="text" class="form-control" id="deviceHostname">
+                        </div>
+                        <div class="mb-3">
+                            <label for="deviceRole" class="form-label">Role</label>
+                            <input type="text" class="form-control" id="deviceRole" placeholder="e.g., Server, Router, Switch">
+                        </div>
+                        <div class="mb-3">
+                            <label for="deviceLocation" class="form-label">Location</label>
+                            <input type="text" class="form-control" id="deviceLocation">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info" onclick="saveDeviceModal()">Save Device</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="importForm">
+                        <div class="mb-3">
+                            <label for="importFile" class="form-label">CSV File</label>
+                            <input type="file" class="form-control" id="importFile" accept=".csv" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="importType" class="form-label">Data Type</label>
+                            <select class="form-select" id="importType" required>
+                                <option value="">Select data type</option>
+                                <option value="supernets">Supernets</option>
+                                <option value="subnets">Subnets</option>
+                                <option value="devices">Devices</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="importData()">Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
