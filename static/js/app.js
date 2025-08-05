@@ -58,6 +58,8 @@ async function loadDashboard() {
         document.getElementById('subnetCount').textContent = dashboardStats.subnet_count;
         document.getElementById('deviceCount').textContent = dashboardStats.device_count;
         
+        updateNetworkHealth(dashboardStats);
+        
         await loadSupernets();
         await loadSubnets();
         
@@ -67,15 +69,52 @@ async function loadDashboard() {
     }
 }
 
+function updateNetworkHealth(stats) {
+    const healthCard = document.getElementById('networkHealthCard');
+    const healthElement = document.getElementById('networkHealth');
+    const healthIcon = document.getElementById('healthIcon');
+    const criticalCount = document.getElementById('criticalCount');
+    const warningCount = document.getElementById('warningCount');
+    
+    if (healthElement) {
+        healthElement.textContent = stats.network_health.charAt(0).toUpperCase() + stats.network_health.slice(1);
+    }
+    
+    if (healthCard) {
+        healthCard.className = 'card';
+        if (stats.network_health === 'critical') {
+            healthCard.classList.add('bg-danger', 'text-white');
+            if (healthIcon) healthIcon.className = 'bi bi-shield-x fs-1';
+        } else if (stats.network_health === 'warning') {
+            healthCard.classList.add('bg-warning', 'text-dark');
+            if (healthIcon) healthIcon.className = 'bi bi-shield-exclamation fs-1';
+        } else {
+            healthCard.classList.add('bg-success', 'text-white');
+            if (healthIcon) healthIcon.className = 'bi bi-shield-check fs-1';
+        }
+    }
+    
+    if (criticalCount) {
+        criticalCount.textContent = stats.critical_subnets ? stats.critical_subnets.length : 0;
+    }
+    
+    if (warningCount) {
+        warningCount.textContent = stats.warning_subnets ? stats.warning_subnets.length : 0;
+    }
+}
+
 function calculateAvgUtilization() {
     if (subnets.length === 0) {
         document.getElementById('avgUtilization').textContent = '0%';
         return;
     }
     
-    const totalUtilization = subnets.reduce((sum, subnet) => sum + subnet.utilization, 0);
+    const totalUtilization = subnets.reduce((sum, subnet) => sum + (subnet.utilization || 0), 0);
     const avgUtilization = Math.round(totalUtilization / subnets.length);
-    document.getElementById('avgUtilization').textContent = avgUtilization + '%';
+    const avgElement = document.getElementById('avgUtilization');
+    if (avgElement) {
+        avgElement.textContent = avgUtilization + '%';
+    }
 }
 
 async function loadSupernets() {
@@ -126,6 +165,7 @@ function renderSupernets() {
     tbody.innerHTML = '';
     
     supernets.forEach(supernet => {
+        const utilizationClass = getUtilizationClass(supernet.utilization || 0);
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><span class="network-cidr">${supernet.network}</span></td>
@@ -134,6 +174,15 @@ function renderSupernets() {
             <td><span class="ip-address">${supernet.start_ip}</span></td>
             <td><span class="ip-address">${supernet.end_ip}</span></td>
             <td>${supernet.total_hosts.toLocaleString()}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="utilization-bar me-2" style="width: 60px;">
+                        <div class="utilization-fill ${utilizationClass}" style="width: ${supernet.utilization || 0}%"></div>
+                    </div>
+                    <span class="badge bg-${utilizationClass.replace('utilization-', '')}" style="color: black !important;">${supernet.utilization || 0}%</span>
+                </div>
+            </td>
+            <td>${supernet.available_ips || 0}</td>
             <td>${formatDate(supernet.created_at)}</td>
             <td>
                 <button class="btn btn-sm btn-outline-danger" onclick="deleteSupernet(${supernet.id})">
