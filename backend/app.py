@@ -12,7 +12,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-DATABASE = "ip_tracker.db"
+DATABASE = "/app/data/ip_tracker.db"
 
 
 def get_db_connection():
