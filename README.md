@@ -9,14 +9,16 @@ A comprehensive web-based IP address tracking and subnet management system built
 - **Subnet Allocation**: Create subnets within supernets with overlap prevention
 - **Device IP Assignment**: Assign IPs to devices with validation
 - **Dashboard Statistics**: Real-time utilization tracking and statistics
+- **Enhanced Subnet Display**: Total hosts, utilization percentage, and available IPs columns
 - **Export/Import**: CSV export/import for data management
 - **Change Logging**: Audit trail for all modifications
 
 ### Validation Rules
 - Prevent overlapping subnets automatically
 - Ensure IPs are within subnet ranges
-- Prevent duplicate IP assignments
+- Prevent duplicate IP assignments (built-in IP conflict detection)
 - Validate gateway IPs within subnet ranges
+- Real-time utilization calculations and availability tracking
 
 ### Technical Stack
 - **Backend**: Flask with SQLite database
