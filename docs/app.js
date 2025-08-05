@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'https://your-backend-url.fly.dev'; // Will be updated after deployment
+const API_BASE_URL = 'https://user:1d0226cace32fdae536b90da70d9c949@ip-tracker-app-tunnel-jgrxn7xr.devinapps.com';
 
 let supernets = [];
 let subnets = [];
