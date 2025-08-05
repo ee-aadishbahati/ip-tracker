@@ -124,7 +124,10 @@ function renderSupernets() {
             <td>${subnetDisplay}</td>
             <td>${new Date(supernet.created_at).toLocaleDateString()}</td>
             <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteSupernet(${supernet.id})">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSupernet(${supernet.id})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSupernet(${supernet.id})" title="Delete">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -150,6 +153,9 @@ function filterSupernets() {
 function showSupernetModal() {
     const modal = new bootstrap.Modal(document.getElementById('supernetModal'));
     document.getElementById('supernetForm').reset();
+    document.getElementById('supernetModal').dataset.editId = '';
+    document.querySelector('#supernetModal .modal-title').textContent = 'Add Supernet';
+    document.querySelector('#supernetModal .btn-primary').textContent = 'Save Supernet';
     modal.show();
 }
 
@@ -157,6 +163,7 @@ async function saveSupernetModal() {
     const network = document.getElementById('supernetNetwork').value;
     const name = document.getElementById('supernetName').value;
     const description = document.getElementById('supernetDescription').value;
+    const editId = document.getElementById('supernetModal').dataset.editId;
     
     if (!network || !name) {
         showAlert('Please fill in all required fields', 'warning');
@@ -164,20 +171,47 @@ async function saveSupernetModal() {
     }
     
     try {
-        await apiCall('/api/supernets', 'POST', {
-            network: network,
-            name: name,
-            description: description
-        });
+        if (editId) {
+            await apiCall(`/api/supernets/${editId}`, 'PUT', {
+                network: network,
+                name: name,
+                description: description
+            });
+            showAlert('Supernet updated successfully', 'success');
+        } else {
+            await apiCall('/api/supernets', 'POST', {
+                network: network,
+                name: name,
+                description: description
+            });
+            showAlert('Supernet created successfully', 'success');
+        }
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('supernetModal'));
         modal.hide();
         
-        showAlert('Supernet created successfully', 'success');
         await loadDashboard();
     } catch (error) {
-        console.error('Error creating supernet:', error);
+        console.error('Error saving supernet:', error);
     }
+}
+
+async function editSupernet(id) {
+    const supernet = supernets.find(s => s.id === id);
+    if (!supernet) {
+        showAlert('Supernet not found', 'error');
+        return;
+    }
+    
+    document.getElementById('supernetNetwork').value = supernet.network;
+    document.getElementById('supernetName').value = supernet.name;
+    document.getElementById('supernetDescription').value = supernet.description || '';
+    document.getElementById('supernetModal').dataset.editId = id;
+    document.querySelector('#supernetModal .modal-title').textContent = 'Edit Supernet';
+    document.querySelector('#supernetModal .btn-primary').textContent = 'Update Supernet';
+    
+    const modal = new bootstrap.Modal(document.getElementById('supernetModal'));
+    modal.show();
 }
 
 async function deleteSupernet(id) {
@@ -222,7 +256,10 @@ function renderSubnets() {
             <td>${subnet.total_hosts.toLocaleString()}</td>
             <td>${new Date(subnet.created_at).toLocaleDateString()}</td>
             <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteSubnet(${subnet.id})">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSubnet(${subnet.id})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSubnet(${subnet.id})" title="Delete">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -247,6 +284,9 @@ function filterSubnets() {
 function showSubnetModal() {
     const modal = new bootstrap.Modal(document.getElementById('subnetModal'));
     document.getElementById('subnetForm').reset();
+    document.getElementById('subnetModal').dataset.editId = '';
+    document.querySelector('#subnetModal .modal-title').textContent = 'Add Subnet';
+    document.querySelector('#subnetModal .btn-success').textContent = 'Save Subnet';
     updateSubnetDropdowns();
     modal.show();
 }
@@ -258,6 +298,7 @@ async function saveSubnetModal() {
     const purpose = document.getElementById('subnetPurpose').value;
     const assignedTo = document.getElementById('subnetAssignedTo').value;
     const gateway = document.getElementById('subnetGateway').value;
+    const editId = document.getElementById('subnetModal').dataset.editId;
     
     if (!supernetId || !network || !name) {
         showAlert('Please fill in all required fields', 'warning');
@@ -265,23 +306,57 @@ async function saveSubnetModal() {
     }
     
     try {
-        await apiCall('/api/subnets', 'POST', {
-            supernet_id: parseInt(supernetId),
-            network: network,
-            name: name,
-            purpose: purpose,
-            assigned_to: assignedTo,
-            gateway: gateway
-        });
+        if (editId) {
+            await apiCall(`/api/subnets/${editId}`, 'PUT', {
+                supernet_id: parseInt(supernetId),
+                network: network,
+                name: name,
+                purpose: purpose,
+                assigned_to: assignedTo,
+                gateway: gateway
+            });
+            showAlert('Subnet updated successfully', 'success');
+        } else {
+            await apiCall('/api/subnets', 'POST', {
+                supernet_id: parseInt(supernetId),
+                network: network,
+                name: name,
+                purpose: purpose,
+                assigned_to: assignedTo,
+                gateway: gateway
+            });
+            showAlert('Subnet created successfully', 'success');
+        }
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('subnetModal'));
         modal.hide();
         
-        showAlert('Subnet created successfully', 'success');
         await loadDashboard();
     } catch (error) {
-        console.error('Error creating subnet:', error);
+        console.error('Error saving subnet:', error);
     }
+}
+
+async function editSubnet(id) {
+    const subnet = subnets.find(s => s.id === id);
+    if (!subnet) {
+        showAlert('Subnet not found', 'error');
+        return;
+    }
+    
+    updateSubnetDropdowns();
+    document.getElementById('subnetSupernet').value = subnet.supernet_id;
+    document.getElementById('subnetNetwork').value = subnet.network;
+    document.getElementById('subnetName').value = subnet.name;
+    document.getElementById('subnetPurpose').value = subnet.purpose || '';
+    document.getElementById('subnetAssignedTo').value = subnet.assigned_to || '';
+    document.getElementById('subnetGateway').value = subnet.gateway || '';
+    document.getElementById('subnetModal').dataset.editId = id;
+    document.querySelector('#subnetModal .modal-title').textContent = 'Edit Subnet';
+    document.querySelector('#subnetModal .btn-success').textContent = 'Update Subnet';
+    
+    const modal = new bootstrap.Modal(document.getElementById('subnetModal'));
+    modal.show();
 }
 
 async function deleteSubnet(id) {
@@ -324,7 +399,10 @@ function renderDevices() {
             <td>${device.subnet_name || ''}</td>
             <td>${new Date(device.created_at).toLocaleDateString()}</td>
             <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteDevice(${device.id})">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editDevice(${device.id})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteDevice(${device.id})" title="Delete">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -349,6 +427,9 @@ function filterDevices() {
 function showDeviceModal() {
     const modal = new bootstrap.Modal(document.getElementById('deviceModal'));
     document.getElementById('deviceForm').reset();
+    document.getElementById('deviceModal').dataset.editId = '';
+    document.querySelector('#deviceModal .modal-title').textContent = 'Add Device';
+    document.querySelector('#deviceModal .btn-info').textContent = 'Save Device';
     updateDeviceDropdowns();
     modal.show();
 }
@@ -360,6 +441,7 @@ async function saveDeviceModal() {
     const hostname = document.getElementById('deviceHostname').value;
     const role = document.getElementById('deviceRole').value;
     const location = document.getElementById('deviceLocation').value;
+    const editId = document.getElementById('deviceModal').dataset.editId;
     
     if (!subnetId || !deviceName || !ipAddress) {
         showAlert('Please fill in all required fields', 'warning');
@@ -367,23 +449,57 @@ async function saveDeviceModal() {
     }
     
     try {
-        await apiCall('/api/devices', 'POST', {
-            subnet_id: parseInt(subnetId),
-            device_name: deviceName,
-            ip_address: ipAddress,
-            hostname: hostname,
-            role: role,
-            location: location
-        });
+        if (editId) {
+            await apiCall(`/api/devices/${editId}`, 'PUT', {
+                subnet_id: parseInt(subnetId),
+                device_name: deviceName,
+                ip_address: ipAddress,
+                hostname: hostname,
+                role: role,
+                location: location
+            });
+            showAlert('Device updated successfully', 'success');
+        } else {
+            await apiCall('/api/devices', 'POST', {
+                subnet_id: parseInt(subnetId),
+                device_name: deviceName,
+                ip_address: ipAddress,
+                hostname: hostname,
+                role: role,
+                location: location
+            });
+            showAlert('Device created successfully', 'success');
+        }
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('deviceModal'));
         modal.hide();
         
-        showAlert('Device created successfully', 'success');
         await loadDashboard();
     } catch (error) {
-        console.error('Error creating device:', error);
+        console.error('Error saving device:', error);
     }
+}
+
+async function editDevice(id) {
+    const device = devices.find(d => d.id === id);
+    if (!device) {
+        showAlert('Device not found', 'error');
+        return;
+    }
+    
+    updateDeviceDropdowns();
+    document.getElementById('deviceSubnet').value = device.subnet_id;
+    document.getElementById('deviceName').value = device.device_name;
+    document.getElementById('deviceIpAddress').value = device.ip_address;
+    document.getElementById('deviceHostname').value = device.hostname || '';
+    document.getElementById('deviceRole').value = device.role || '';
+    document.getElementById('deviceLocation').value = device.location || '';
+    document.getElementById('deviceModal').dataset.editId = id;
+    document.querySelector('#deviceModal .modal-title').textContent = 'Edit Device';
+    document.querySelector('#deviceModal .btn-info').textContent = 'Update Device';
+    
+    const modal = new bootstrap.Modal(document.getElementById('deviceModal'));
+    modal.show();
 }
 
 async function deleteDevice(id) {

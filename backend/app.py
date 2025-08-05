@@ -469,89 +469,270 @@ def handle_devices():
             conn.close()
 
 
-@app.route("/api/supernets/<int:supernet_id>", methods=["DELETE"])
-def delete_supernet(supernet_id):
-    """Delete a supernet and all associated subnets and devices."""
-    conn = get_db_connection()
+@app.route("/api/supernets/<int:supernet_id>", methods=["DELETE", "PUT"])
+def handle_supernet_by_id(supernet_id):
+    """Handle supernet operations by ID."""
+    if request.method == "DELETE":
+        """Delete a supernet and all associated subnets and devices."""
+        conn = get_db_connection()
 
-    supernet = conn.execute(
-        "SELECT * FROM supernets WHERE id = ?", (supernet_id,)
-    ).fetchone()
-    if not supernet:
-        conn.close()
-        return jsonify({"error": "Supernet not found"}), 404
+        supernet = conn.execute(
+            "SELECT * FROM supernets WHERE id = ?", (supernet_id,)
+        ).fetchone()
+        if not supernet:
+            conn.close()
+            return jsonify({"error": "Supernet not found"}), 404
 
-    try:
-        conn.execute(
-            "DELETE FROM devices WHERE subnet_id IN "
-            "(SELECT id FROM subnets WHERE supernet_id = ?)",
-            (supernet_id,),
-        )
-        conn.execute("DELETE FROM subnets WHERE supernet_id = ?", (supernet_id,))
-        conn.execute("DELETE FROM supernets WHERE id = ?", (supernet_id,))
-        conn.commit()
-        log_change(
-            "DELETE",
-            "supernet",
-            supernet_id,
-            f'Deleted supernet {supernet["network"]}',
-        )
-        return jsonify({"message": "Supernet deleted successfully"})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
+        try:
+            conn.execute(
+                "DELETE FROM devices WHERE subnet_id IN "
+                "(SELECT id FROM subnets WHERE supernet_id = ?)",
+                (supernet_id,),
+            )
+            conn.execute("DELETE FROM subnets WHERE supernet_id = ?", (supernet_id,))
+            conn.execute("DELETE FROM supernets WHERE id = ?", (supernet_id,))
+            conn.commit()
+            log_change(
+                "DELETE",
+                "supernet",
+                supernet_id,
+                f'Deleted supernet {supernet["network"]}',
+            )
+            return jsonify({"message": "Supernet deleted successfully"})
+        except Exception as e:
+            conn.rollback()
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+    
+    elif request.method == "PUT":
+        """Update a supernet."""
+        data = request.get_json()
+        network = data.get("network")
+        name = data.get("name", "")
+        description = data.get("description", "")
+
+        if not network or not name:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        try:
+            ipaddress.ip_network(network, strict=False)
+        except ipaddress.NetmaskValueError:
+            return jsonify({"error": "Invalid network format"}), 400
+
+        conn = get_db_connection()
+        
+        supernet = conn.execute(
+            "SELECT * FROM supernets WHERE id = ?", (supernet_id,)
+        ).fetchone()
+        if not supernet:
+            conn.close()
+            return jsonify({"error": "Supernet not found"}), 404
+
+        try:
+            existing = conn.execute(
+                "SELECT id FROM supernets WHERE network = ? AND id != ?", 
+                (network, supernet_id)
+            ).fetchone()
+            if existing:
+                conn.close()
+                return jsonify({"error": "Supernet network already exists"}), 400
+
+            conn.execute(
+                "UPDATE supernets SET network = ?, name = ?, description = ? WHERE id = ?",
+                (network, name, description, supernet_id),
+            )
+            conn.commit()
+            log_change(
+                "UPDATE", 
+                "supernet", 
+                supernet_id, 
+                f"Updated supernet {supernet['network']} to {network}"
+            )
+            return jsonify({"message": "Supernet updated successfully"})
+        except sqlite3.IntegrityError:
+            return jsonify({"error": "Supernet network already exists"}), 400
+        finally:
+            conn.close()
 
 
-@app.route("/api/subnets/<int:subnet_id>", methods=["DELETE"])
-def delete_subnet(subnet_id):
-    """Delete a subnet and all associated devices."""
-    conn = get_db_connection()
+@app.route("/api/subnets/<int:subnet_id>", methods=["DELETE", "PUT"])
+def handle_subnet_by_id(subnet_id):
+    """Handle subnet operations by ID."""
+    if request.method == "DELETE":
+        """Delete a subnet and all associated devices."""
+        conn = get_db_connection()
 
-    subnet = conn.execute("SELECT * FROM subnets WHERE id = ?", (subnet_id,)).fetchone()
-    if not subnet:
-        conn.close()
-        return jsonify({"error": "Subnet not found"}), 404
+        subnet = conn.execute("SELECT * FROM subnets WHERE id = ?", (subnet_id,)).fetchone()
+        if not subnet:
+            conn.close()
+            return jsonify({"error": "Subnet not found"}), 404
 
-    try:
-        conn.execute("DELETE FROM devices WHERE subnet_id = ?", (subnet_id,))
-        conn.execute("DELETE FROM subnets WHERE id = ?", (subnet_id,))
-        conn.commit()
-        log_change("DELETE", "subnet", subnet_id, f'Deleted subnet {subnet["network"]}')
-        return jsonify({"message": "Subnet deleted successfully"})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
+        try:
+            conn.execute("DELETE FROM devices WHERE subnet_id = ?", (subnet_id,))
+            conn.execute("DELETE FROM subnets WHERE id = ?", (subnet_id,))
+            conn.commit()
+            log_change("DELETE", "subnet", subnet_id, f'Deleted subnet {subnet["network"]}')
+            return jsonify({"message": "Subnet deleted successfully"})
+        except Exception as e:
+            conn.rollback()
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+    
+    elif request.method == "PUT":
+        """Update a subnet."""
+        data = request.get_json()
+        supernet_id = data.get("supernet_id")
+        network = data.get("network")
+        name = data.get("name")
+        purpose = data.get("purpose", "")
+        assigned_to = data.get("assigned_to", "")
+        gateway = data.get("gateway", "")
+
+        if not all([supernet_id, network, name]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        try:
+            subnet_network = ipaddress.ip_network(network, strict=False)
+        except ipaddress.NetmaskValueError:
+            return jsonify({"error": "Invalid subnet format"}), 400
+
+        if gateway and not validate_ip_in_subnet(gateway, network):
+            return jsonify({"error": "Gateway must be within subnet range"}), 400
+
+        conn = get_db_connection()
+        
+        subnet = conn.execute("SELECT * FROM subnets WHERE id = ?", (subnet_id,)).fetchone()
+        if not subnet:
+            conn.close()
+            return jsonify({"error": "Subnet not found"}), 404
+
+        supernet = conn.execute(
+            "SELECT network FROM supernets WHERE id = ?", (supernet_id,)
+        ).fetchone()
+        if not supernet:
+            conn.close()
+            return jsonify({"error": "Supernet not found"}), 404
+
+        try:
+            supernet_network = ipaddress.ip_network(supernet["network"], strict=False)
+            if not supernet_network.supernet_of(subnet_network):
+                conn.close()
+                return jsonify({"error": "Subnet must be within supernet range"}), 400
+        except ipaddress.NetmaskValueError:
+            conn.close()
+            return jsonify({"error": "Invalid supernet format"}), 400
+
+        if check_subnet_overlap(network, supernet_id, exclude_subnet_id=subnet_id):
+            conn.close()
+            return jsonify({"error": "Subnet overlaps with existing subnet"}), 400
+
+        try:
+            conn.execute(
+                "UPDATE subnets SET supernet_id = ?, network = ?, name = ?, "
+                "purpose = ?, assigned_to = ?, gateway = ? WHERE id = ?",
+                (supernet_id, network, name, purpose, assigned_to, gateway, subnet_id),
+            )
+            conn.commit()
+            log_change(
+                "UPDATE",
+                "subnet",
+                subnet_id,
+                f'Updated subnet {subnet["network"]} to {network}',
+            )
+            return jsonify({"message": "Subnet updated successfully"})
+        except sqlite3.IntegrityError:
+            return jsonify({"error": "Subnet network already exists"}), 400
+        finally:
+            conn.close()
 
 
-@app.route("/api/devices/<int:device_id>", methods=["DELETE"])
-def delete_device(device_id):
-    """Delete a device."""
-    conn = get_db_connection()
+@app.route("/api/devices/<int:device_id>", methods=["DELETE", "PUT"])
+def handle_device_by_id(device_id):
+    """Handle device operations by ID."""
+    if request.method == "DELETE":
+        """Delete a device."""
+        conn = get_db_connection()
 
-    device = conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,)).fetchone()
-    if not device:
-        conn.close()
-        return jsonify({"error": "Device not found"}), 404
+        device = conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,)).fetchone()
+        if not device:
+            conn.close()
+            return jsonify({"error": "Device not found"}), 404
 
-    try:
-        conn.execute("DELETE FROM devices WHERE id = ?", (device_id,))
-        conn.commit()
-        log_change(
-            "DELETE",
-            "device",
-            device_id,
-            f'Deleted device {device["device_name"]} ' f'({device["ip_address"]})',
-        )
-        return jsonify({"message": "Device deleted successfully"})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
+        try:
+            conn.execute("DELETE FROM devices WHERE id = ?", (device_id,))
+            conn.commit()
+            log_change(
+                "DELETE",
+                "device",
+                device_id,
+                f'Deleted device {device["device_name"]} ' f'({device["ip_address"]})',
+            )
+            return jsonify({"message": "Device deleted successfully"})
+        except Exception as e:
+            conn.rollback()
+            return jsonify({"error": str(e)}), 500
+        finally:
+            conn.close()
+    
+    elif request.method == "PUT":
+        """Update a device."""
+        data = request.get_json()
+        subnet_id = data.get("subnet_id")
+        device_name = data.get("device_name")
+        role = data.get("role", "")
+        location = data.get("location", "")
+        ip_address = data.get("ip_address")
+        hostname = data.get("hostname", "")
+
+        if not all([subnet_id, device_name, ip_address]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        conn = get_db_connection()
+        
+        device = conn.execute("SELECT * FROM devices WHERE id = ?", (device_id,)).fetchone()
+        if not device:
+            conn.close()
+            return jsonify({"error": "Device not found"}), 404
+
+        subnet = conn.execute(
+            "SELECT network FROM subnets WHERE id = ?", (subnet_id,)
+        ).fetchone()
+        if not subnet:
+            conn.close()
+            return jsonify({"error": "Subnet not found"}), 404
+
+        if not validate_ip_in_subnet(ip_address, subnet["network"]):
+            conn.close()
+            return jsonify({"error": "IP address must be within subnet range"}), 400
+
+        try:
+            existing = conn.execute(
+                "SELECT id FROM devices WHERE ip_address = ? AND id != ?", 
+                (ip_address, device_id)
+            ).fetchone()
+            if existing:
+                conn.close()
+                return jsonify({"error": "IP address already assigned"}), 400
+
+            conn.execute(
+                "UPDATE devices SET subnet_id = ?, device_name = ?, role = ?, "
+                "location = ?, ip_address = ?, hostname = ? WHERE id = ?",
+                (subnet_id, device_name, role, location, ip_address, hostname, device_id),
+            )
+            conn.commit()
+            log_change(
+                "UPDATE",
+                "device",
+                device_id,
+                f"Updated device {device['device_name']} to {device_name} ({ip_address})",
+            )
+            return jsonify({"message": "Device updated successfully"})
+        except sqlite3.IntegrityError:
+            return jsonify({"error": "IP address already assigned"}), 400
+        finally:
+            conn.close()
 
 
 @app.route("/api/export")
