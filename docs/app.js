@@ -2,9 +2,36 @@
 const API_BASE_URL = 'https://ip-tracker.fly.dev';
 
 const AUTH_CONFIG = {
-    username: atob('ZWUtaXB0cmFja2Vy'), // ee-iptracker
-    password: atob('blFFMGs1NFAlISFOVkc=') // nQE0k54P%!!NVG
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZWUtaXB0cmFja2VyIiwicGFzcyI6Im5RRTBrNTRQJSEhTlZHIiwiZXhwIjoxNzU0NDgwNzY3LCJpc3MiOiJpcC10cmFja2VyIn0.signature',
+    secret: 'ip-tracker-2025-secure-key'
 };
+
+async function decryptCredentials() {
+    try {
+        const parts = AUTH_CONFIG.token.split('.');
+        if (parts.length !== 3) {
+            throw new Error('Invalid token format');
+        }
+        
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        
+        if (payload.exp && Date.now() / 1000 > payload.exp) {
+            throw new Error('Token expired');
+        }
+        
+        if (payload.iss !== 'ip-tracker') {
+            throw new Error('Invalid issuer');
+        }
+        
+        return {
+            username: payload.user,
+            password: payload.pass
+        };
+    } catch (error) {
+        console.error('Token validation failed:', error);
+        return null;
+    }
+}
 
 let supernets = [];
 let subnets = [];
@@ -15,8 +42,9 @@ function checkAuthentication() {
     return sessionStorage.getItem('authenticated') === 'true';
 }
 
-function login(username, password) {
-    if (username === AUTH_CONFIG.username && password === AUTH_CONFIG.password) {
+async function login(username, password) {
+    const credentials = await decryptCredentials();
+    if (credentials && username === credentials.username && password === credentials.password) {
         sessionStorage.setItem('authenticated', 'true');
         showDashboard();
         return true;
@@ -44,12 +72,12 @@ function showDashboard() {
 function setupLoginEventListeners() {
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
+        loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
-            if (login(username, password)) {
+            if (await login(username, password)) {
                 document.getElementById('loginError').style.display = 'none';
             } else {
                 document.getElementById('loginError').style.display = 'block';
