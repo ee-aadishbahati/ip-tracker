@@ -971,6 +971,12 @@ def dashboard_stats():
         "SELECT * FROM change_log ORDER BY timestamp DESC LIMIT 10"
     ).fetchall()
 
+    high_utilization_subnets = conn.execute(
+        """SELECT s.*, (
+            SELECT COUNT(*) FROM devices WHERE subnet_id = s.id
+        ) as used_ips FROM subnets s"""
+    ).fetchall()
+
     conn.close()
 
     changes = []
@@ -986,12 +992,6 @@ def dashboard_stats():
                 "timestamp": change["timestamp"],
             }
         )
-
-    high_utilization_subnets = conn.execute(
-        """SELECT s.*, (
-            SELECT COUNT(*) FROM devices WHERE subnet_id = s.id
-        ) as used_ips FROM subnets s"""
-    ).fetchall()
     
     critical_subnets = []
     warning_subnets = []
