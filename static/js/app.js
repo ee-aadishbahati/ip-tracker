@@ -755,3 +755,41 @@ function showAlert(message, type = 'info') {
         }
     }, 5000);
 }
+
+function toggleSubnetDetails(supernetId) {
+    const row = document.querySelector(`tr[data-supernet-id="${supernetId}"]`);
+    if (!row) return;
+    
+    const existingDetailsRow = row.nextElementSibling;
+    if (existingDetailsRow && existingDetailsRow.classList.contains('subnet-details-row')) {
+        existingDetailsRow.remove();
+        return;
+    }
+    
+    const subnets = JSON.parse(row.dataset.subnets || '[]');
+    if (subnets.length === 0) return;
+    
+    const detailsRow = document.createElement('tr');
+    detailsRow.classList.add('subnet-details-row');
+    detailsRow.innerHTML = `
+        <td colspan="10" class="bg-light">
+            <div class="p-3">
+                <h6 class="mb-2">Subnets in this supernet:</h6>
+                <div class="row">
+                    ${subnets.map(subnet => `
+                        <div class="col-md-4 mb-2">
+                            <div class="card card-body py-2">
+                                <small>
+                                    <strong><code>${subnet.network}</code></strong><br>
+                                    <span class="text-muted">${subnet.name}</span>
+                                </small>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </td>
+    `;
+    
+    row.parentNode.insertBefore(detailsRow, row.nextSibling);
+}
