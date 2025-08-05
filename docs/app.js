@@ -288,25 +288,75 @@ function showSubnetModal() {
     document.querySelector('#subnetModal .modal-title').textContent = 'Add Subnet';
     document.querySelector('#subnetModal .btn-success').textContent = 'Save Subnet';
     updateSubnetDropdowns();
+    
+    setTimeout(() => {
+        setupSubnetModeListeners();
+        const manualMode = document.getElementById('manualMode');
+        const manualFields = document.getElementById('manualFields');
+        if (manualMode && manualFields) {
+            manualMode.checked = true;
+            manualFields.style.display = 'block';
+            document.getElementById('subnetNetwork').setAttribute('required', 'required');
+        }
+    }, 100);
+    
     modal.show();
+}
+
+function setupSubnetModeListeners() {
+    const modeRadios = document.querySelectorAll('input[name="allocationMode"]');
+    const manualFields = document.getElementById('manualFields');
+    const byMaskFields = document.getElementById('byMaskFields');
+    const byHostsFields = document.getElementById('byHostsFields');
+    
+    if (modeRadios.length > 0 && manualFields && byMaskFields && byHostsFields) {
+        modeRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                manualFields.style.display = 'none';
+                byMaskFields.style.display = 'none';
+                byHostsFields.style.display = 'none';
+                
+                document.getElementById('subnetNetwork').removeAttribute('required');
+                document.getElementById('subnetPrefixLength').removeAttribute('required');
+                document.getElementById('subnetHostCount').removeAttribute('required');
+                
+                if (this.value === 'manual') {
+                    manualFields.style.display = 'block';
+                    document.getElementById('subnetNetwork').setAttribute('required', 'required');
+                } else if (this.value === 'by_mask') {
+                    byMaskFields.style.display = 'block';
+                    document.getElementById('subnetPrefixLength').setAttribute('required', 'required');
+                } else if (this.value === 'by_hosts') {
+                    byHostsFields.style.display = 'block';
+                    document.getElementById('subnetHostCount').setAttribute('required', 'required');
+                }
+            });
+        });
+    }
 }
 
 async function saveSubnetModal() {
     const supernetId = document.getElementById('subnetSupernet').value;
-    const network = document.getElementById('subnetNetwork').value;
     const name = document.getElementById('subnetName').value;
     const purpose = document.getElementById('subnetPurpose').value;
     const assignedTo = document.getElementById('subnetAssignedTo').value;
-    const gateway = document.getElementById('subnetGateway').value;
     const editId = document.getElementById('subnetModal').dataset.editId;
     
-    if (!supernetId || !network || !name) {
+    if (!supernetId || !name) {
         showAlert('Please fill in all required fields', 'warning');
         return;
     }
     
     try {
         if (editId) {
+            const network = document.getElementById('subnetNetwork').value;
+            const gateway = document.getElementById('subnetGateway').value;
+            
+            if (!network) {
+                showAlert('Please fill in all required fields', 'warning');
+                return;
+            }
+            
             await apiCall(`/api/subnets/${editId}`, 'PUT', {
                 supernet_id: parseInt(supernetId),
                 network: network,
@@ -317,15 +367,51 @@ async function saveSubnetModal() {
             });
             showAlert('Subnet updated successfully', 'success');
         } else {
-            await apiCall('/api/subnets', 'POST', {
-                supernet_id: parseInt(supernetId),
-                network: network,
-                name: name,
-                purpose: purpose,
-                assigned_to: assignedTo,
-                gateway: gateway
-            });
-            showAlert('Subnet created successfully', 'success');
+            const allocationMode = document.querySelector('input[name="allocationMode"]:checked').value;
+            
+            if (allocationMode === 'manual') {
+                const network = document.getElementById('subnetNetwork').value;
+                const gateway = document.getElementById('subnetGateway').value;
+                
+                if (!network) {
+                    showAlert('Please fill in all required fields', 'warning');
+                    return;
+                }
+                
+                await apiCall('/api/subnets', 'POST', {
+                    supernet_id: parseInt(supernetId),
+                    network: network,
+                    name: name,
+                    purpose: purpose,
+                    assigned_to: assignedTo,
+                    gateway: gateway
+                });
+                showAlert('Subnet created successfully', 'success');
+            } else {
+                const data = {
+                    mode: allocationMode,
+                    name: name,
+                    purpose: purpose,
+                    assigned_to: assignedTo
+                };
+                
+                if (allocationMode === 'by_mask') {
+                    data.prefix_length = parseInt(document.getElementById('subnetPrefixLength').value);
+                    if (!data.prefix_length) {
+                        showAlert('Please select a subnet size', 'warning');
+                        return;
+                    }
+                } else if (allocationMode === 'by_hosts') {
+                    data.host_count = parseInt(document.getElementById('subnetHostCount').value);
+                    if (!data.host_count || data.host_count < 1) {
+                        showAlert('Please enter a valid host count', 'warning');
+                        return;
+                    }
+                }
+                
+                const result = await apiCall(`/api/supernets/${supernetId}/allocate`, 'POST', data);
+                showAlert(`Subnet allocated successfully! Network: ${result.network}`, 'success');
+            }
         }
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('subnetModal'));
