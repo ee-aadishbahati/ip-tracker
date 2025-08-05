@@ -245,22 +245,26 @@ function renderSubnets() {
     tbody.innerHTML = '';
     
     subnets.forEach(subnet => {
+        const utilizationClass = getUtilizationClass(subnet.utilization);
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td><code>${subnet.network}</code></td>
+            <td><span class="network-cidr">${subnet.network}</span></td>
             <td>${subnet.name}</td>
-            <td>${subnet.purpose || ''}</td>
-            <td>${subnet.assigned_to || ''}</td>
-            <td><code>${subnet.gateway || ''}</code></td>
-            <td><code>${subnet.start_ip}</code></td>
-            <td><code>${subnet.end_ip}</code></td>
-            <td>${subnet.total_hosts.toLocaleString()}</td>
-            <td>${new Date(subnet.created_at).toLocaleDateString()}</td>
+            <td>${subnet.purpose || '-'}</td>
+            <td>${subnet.assigned_to || '-'}</td>
+            <td><span class="ip-address">${subnet.gateway || '-'}</span></td>
+            <td>${subnet.total_hosts}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSubnet(${subnet.id})" title="Edit">
-                    <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteSubnet(${subnet.id})" title="Delete">
+                <div class="d-flex align-items-center">
+                    <div class="utilization-bar me-2" style="width: 60px;">
+                        <div class="utilization-fill ${utilizationClass}" style="width: ${subnet.utilization}%"></div>
+                    </div>
+                    <span class="badge bg-${utilizationClass.replace('utilization-', '')}">${subnet.utilization}%</span>
+                </div>
+            </td>
+            <td>${subnet.available_ips}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSubnet(${subnet.id})">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -784,6 +788,13 @@ function calculateAverageUtilization(subnets) {
     
     return validSubnets > 0 ? Math.round(totalUtilization / validSubnets) : 0;
 }
+function getUtilizationClass(utilization) {
+    if (utilization >= 90) return 'utilization-high';
+    if (utilization >= 70) return 'utilization-medium';
+    return 'utilization-low';
+}
+
+
 
 function toggleSubnetDetails(supernetId) {
     const row = document.querySelector(`tr[data-supernet-id="${supernetId}"]`);
