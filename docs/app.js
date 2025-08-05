@@ -76,6 +76,7 @@ async function loadDashboard() {
         document.getElementById('avgUtilization').textContent = (stats.avg_utilization || 0) + '%';
         
         await loadSupernets();
+        await loadSubnets();
         await loadSubnetFilters();
         await loadDeviceFilters();
     } catch (error) {
