@@ -219,8 +219,8 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
         
-        valid_username = os.environ.get("LOGIN_USERNAME", "ee-iptracker")
-        valid_password = os.environ.get("LOGIN_PASSWORD", "nQE0k54P%!!NVG")
+        valid_username = os.environ.get("LOGIN_USERNAME", "admin")
+        valid_password = os.environ.get("LOGIN_PASSWORD", "password")
         
         if username == valid_username and password == valid_password:
             session["logged_in"] = True
