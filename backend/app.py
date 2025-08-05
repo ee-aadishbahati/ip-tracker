@@ -268,18 +268,27 @@ def handle_supernets():
             try:
                 network = ipaddress.ip_network(supernet["network"], strict=False)
                 
-                subnets = conn.execute(
-                    "SELECT id, network, name FROM subnets WHERE supernet_id = ? ORDER BY created_at",
-                    (supernet["id"],)
+                subnets_in_supernet = conn.execute(
+                    "SELECT * FROM subnets WHERE supernet_id = ?", (supernet["id"],)
                 ).fetchall()
                 
-                subnet_list = []
-                for subnet in subnets:
-                    subnet_list.append({
-                        "id": subnet["id"],
-                        "network": subnet["network"],
-                        "name": subnet["name"]
-                    })
+                total_used_ips = 0
+                total_subnet_hosts = 0
+                
+                for subnet in subnets_in_supernet:
+                    subnet_network = ipaddress.ip_network(subnet["network"], strict=False)
+                    subnet_hosts = subnet_network.num_addresses - 2
+                    used_ips = conn.execute(
+                        "SELECT COUNT(*) as count FROM devices WHERE subnet_id = ?",
+                        (subnet["id"],),
+                    ).fetchone()["count"]
+                    
+                    total_used_ips += used_ips
+                    total_subnet_hosts += subnet_hosts
+                
+                total_hosts = network.num_addresses - 2
+                available_ips = total_subnet_hosts - total_used_ips
+                utilization = (total_used_ips / total_subnet_hosts * 100) if total_subnet_hosts > 0 else 0
                 
                 result.append(
                     {
@@ -289,16 +298,16 @@ def handle_supernets():
                         "description": supernet["description"],
                         "start_ip": str(network.network_address),
                         "end_ip": str(network.broadcast_address),
-                        "total_hosts": network.num_addresses
-                        - 2,  # Exclude network and broadcast
+                        "total_hosts": total_hosts,
+                        "used_ips": total_used_ips,
+                        "available_ips": available_ips,
+                        "utilization": round(utilization, 2),
                         "created_at": supernet["created_at"],
-                        "subnet_count": len(subnet_list),
-                        "subnets": subnet_list,
                     }
                 )
             except ipaddress.NetmaskValueError:
                 continue
-        
+
         conn.close()
         return jsonify(result)
 
@@ -1140,6 +1149,12 @@ def dashboard_stats():
         "SELECT * FROM change_log ORDER BY timestamp DESC LIMIT 10"
     ).fetchall()
 
+    high_utilization_subnets = conn.execute(
+        """SELECT s.*, (
+            SELECT COUNT(*) FROM devices WHERE subnet_id = s.id
+        ) as used_ips FROM subnets s"""
+    ).fetchall()
+
     conn.close()
 
     changes = []
@@ -1155,12 +1170,39 @@ def dashboard_stats():
                 "timestamp": change["timestamp"],
             }
         )
+    
+    critical_subnets = []
+    warning_subnets = []
+    total_utilization = 0
+    subnet_count_with_data = 0
+    
+    for subnet in high_utilization_subnets:
+        try:
+            network = ipaddress.ip_network(subnet["network"], strict=False)
+            total_hosts = network.num_addresses - 2
+            utilization = (subnet["used_ips"] / total_hosts * 100) if total_hosts > 0 else 0
+            
+            total_utilization += utilization
+            subnet_count_with_data += 1
+            
+            if utilization >= 90:
+                critical_subnets.append({"name": subnet["name"], "network": subnet["network"], "utilization": round(utilization, 1)})
+            elif utilization >= 75:
+                warning_subnets.append({"name": subnet["name"], "network": subnet["network"], "utilization": round(utilization, 1)})
+        except ipaddress.NetmaskValueError:
+            continue
+    
+    avg_utilization = round(total_utilization / subnet_count_with_data) if subnet_count_with_data > 0 else 0
 
     return jsonify(
         {
             "supernet_count": supernet_count,
             "subnet_count": subnet_count,
             "device_count": device_count,
+            "avg_utilization": avg_utilization,
+            "critical_subnets": critical_subnets[:5],
+            "warning_subnets": warning_subnets[:5],
+            "network_health": "critical" if critical_subnets else "warning" if warning_subnets else "healthy",
             "recent_changes": changes,
         }
     )
