@@ -317,10 +317,66 @@
                                 <option value="">Select a supernet</option>
                             </select>
                         </div>
+                        
+                        <!-- Allocation Mode Selection -->
                         <div class="mb-3">
-                            <label for="subnetNetwork" class="form-label">Subnet (CIDR)</label>
-                            <input type="text" class="form-control" id="subnetNetwork" placeholder="e.g., 10.10.1.0/24" required>
+                            <label class="form-label">Allocation Mode *</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="allocationMode" id="manualMode" value="manual" checked>
+                                <label class="form-check-label" for="manualMode">
+                                    Manual (specify exact CIDR)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="allocationMode" id="byMaskMode" value="by_mask">
+                                <label class="form-check-label" for="byMaskMode">
+                                    Auto-allocate by subnet size (e.g., /27)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="allocationMode" id="byHostsMode" value="by_hosts">
+                                <label class="form-check-label" for="byHostsMode">
+                                    Auto-allocate by host count (e.g., 30 hosts)
+                                </label>
+                            </div>
                         </div>
+                        
+                        <!-- Manual Mode Fields -->
+                        <div id="manualFields">
+                            <div class="mb-3">
+                                <label for="subnetNetwork" class="form-label">Subnet (CIDR)</label>
+                                <input type="text" class="form-control" id="subnetNetwork" placeholder="e.g., 10.10.1.0/24">
+                            </div>
+                        </div>
+                        
+                        <!-- Auto-allocation by Mask Fields -->
+                        <div id="byMaskFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="subnetPrefixLength" class="form-label">Subnet Size (CIDR prefix) *</label>
+                                <select class="form-select" id="subnetPrefixLength">
+                                    <option value="">Select subnet size</option>
+                                    <option value="24">/24 (254 hosts)</option>
+                                    <option value="25">/25 (126 hosts)</option>
+                                    <option value="26">/26 (62 hosts)</option>
+                                    <option value="27">/27 (30 hosts)</option>
+                                    <option value="28">/28 (14 hosts)</option>
+                                    <option value="29">/29 (6 hosts)</option>
+                                    <option value="30">/30 (2 hosts)</option>
+                                </select>
+                                <div class="form-text">Tool will find the first available block of this size</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Auto-allocation by Hosts Fields -->
+                        <div id="byHostsFields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="subnetHostCount" class="form-label">Number of Hosts Needed *</label>
+                                <input type="number" class="form-control" id="subnetHostCount" placeholder="e.g., 30" min="1">
+                                <div class="form-text">Tool will calculate required subnet size and find first available block</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Common Fields -->
                         <div class="mb-3">
                             <label for="subnetName" class="form-label">Name</label>
                             <input type="text" class="form-control" id="subnetName" required>
@@ -336,6 +392,7 @@
                         <div class="mb-3">
                             <label for="subnetGateway" class="form-label">Gateway IP</label>
                             <input type="text" class="form-control" id="subnetGateway" placeholder="e.g., 10.10.1.1">
+                            <div class="form-text">Auto-calculated for allocation modes</div>
                         </div>
                     </form>
                 </div>

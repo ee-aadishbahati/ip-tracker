@@ -147,6 +147,59 @@ def check_subnet_overlap(
     return False
 
 
+def calculate_cidr_from_hosts(host_count: int) -> int:
+    """Calculate the required CIDR prefix length for a given number of hosts."""
+    import math
+    total_addresses_needed = host_count + 2
+    bits_needed = math.ceil(math.log2(total_addresses_needed))
+    return 32 - bits_needed
+
+
+def find_available_subnet(supernet_id: int, prefix_length: int) -> str | None:
+    """Find the first available subnet of specified size within a supernet."""
+    conn = get_db_connection()
+    
+    supernet = conn.execute(
+        "SELECT network FROM supernets WHERE id = ?", (supernet_id,)
+    ).fetchone()
+    if not supernet:
+        conn.close()
+        return None
+    
+    try:
+        supernet_network = ipaddress.ip_network(supernet["network"], strict=False)
+    except ipaddress.NetmaskValueError:
+        conn.close()
+        return None
+    
+    existing_subnets = conn.execute(
+        "SELECT network FROM subnets WHERE supernet_id = ?", (supernet_id,)
+    ).fetchall()
+    conn.close()
+    
+    existing_networks = []
+    for subnet_row in existing_subnets:
+        try:
+            existing_networks.append(ipaddress.ip_network(subnet_row["network"], strict=False))
+        except ipaddress.NetmaskValueError:
+            continue
+    
+    try:
+        for candidate_subnet in supernet_network.subnets(new_prefix=prefix_length):
+            overlaps = False
+            for existing_network in existing_networks:
+                if candidate_subnet.overlaps(existing_network):
+                    overlaps = True
+                    break
+            
+            if not overlaps:
+                return str(candidate_subnet)
+    except ValueError:
+        return None
+    
+    return None
+
+
 @app.route("/")
 def index():
     """API information endpoint."""
@@ -373,6 +426,78 @@ def handle_subnets():
             return jsonify({"error": "Subnet already exists"}), 400
         finally:
             conn.close()
+
+
+@app.route("/api/supernets/<int:supernet_id>/allocate", methods=["POST"])
+def allocate_subnet(supernet_id):
+    """Intelligently allocate a subnet within a supernet."""
+    data = request.get_json()
+    allocation_mode = data.get("mode")
+    name = data.get("name")
+    purpose = data.get("purpose", "")
+    assigned_to = data.get("assigned_to", "")
+    
+    if not all([allocation_mode, name]):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    if allocation_mode == "by_mask":
+        prefix_length = data.get("prefix_length")
+        if not prefix_length or not isinstance(prefix_length, int) or prefix_length < 1 or prefix_length > 32:
+            return jsonify({"error": "Valid prefix_length required for by_mask mode"}), 400
+    elif allocation_mode == "by_hosts":
+        host_count = data.get("host_count")
+        if not host_count or not isinstance(host_count, int) or host_count < 1:
+            return jsonify({"error": "Valid host_count required for by_hosts mode"}), 400
+        prefix_length = calculate_cidr_from_hosts(host_count)
+    else:
+        return jsonify({"error": "Invalid allocation mode. Use 'by_mask' or 'by_hosts'"}), 400
+    
+    conn = get_db_connection()
+    supernet = conn.execute(
+        "SELECT network FROM supernets WHERE id = ?", (supernet_id,)
+    ).fetchone()
+    if not supernet:
+        conn.close()
+        return jsonify({"error": "Supernet not found"}), 404
+    
+    available_subnet = find_available_subnet(supernet_id, prefix_length)
+    if not available_subnet:
+        conn.close()
+        return jsonify({
+            "error": f"No available /{prefix_length} subnet found in supernet {supernet['network']}"
+        }), 400
+    
+    try:
+        subnet_network = ipaddress.ip_network(available_subnet, strict=False)
+        gateway = str(list(subnet_network.hosts())[0]) if list(subnet_network.hosts()) else str(subnet_network.network_address + 1)
+    except (ipaddress.NetmaskValueError, IndexError):
+        gateway = ""
+    
+    try:
+        cursor = conn.execute(
+            "INSERT INTO subnets (supernet_id, network, name, purpose, assigned_to, gateway) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (supernet_id, available_subnet, name, purpose, assigned_to, gateway),
+        )
+        subnet_id = cursor.lastrowid
+        conn.commit()
+        log_change(
+            "CREATE",
+            "subnet",
+            subnet_id,
+            f'Auto-allocated subnet {available_subnet} in supernet {supernet["network"]} ({allocation_mode})',
+        )
+        
+        return jsonify({
+            "id": subnet_id,
+            "network": available_subnet,
+            "gateway": gateway,
+            "message": f"Subnet allocated successfully using {allocation_mode} mode"
+        }), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Subnet allocation failed due to conflict"}), 400
+    finally:
+        conn.close()
 
 
 @app.route("/api/devices", methods=["GET", "POST"])
