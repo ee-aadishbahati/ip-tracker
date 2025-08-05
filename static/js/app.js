@@ -158,6 +158,7 @@ function renderSubnets() {
             <td>${subnet.purpose || '-'}</td>
             <td>${subnet.assigned_to || '-'}</td>
             <td><span class="ip-address">${subnet.gateway || '-'}</span></td>
+            <td>${subnet.total_hosts}</td>
             <td>
                 <div class="d-flex align-items-center">
                     <div class="utilization-bar me-2" style="width: 60px;">
