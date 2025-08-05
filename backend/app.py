@@ -274,6 +274,7 @@ def handle_supernets():
                 
                 total_used_ips = 0
                 total_subnet_hosts = 0
+                subnet_list = []
                 
                 for subnet in subnets_in_supernet:
                     subnet_network = ipaddress.ip_network(subnet["network"], strict=False)
@@ -285,6 +286,12 @@ def handle_supernets():
                     
                     total_used_ips += used_ips
                     total_subnet_hosts += subnet_hosts
+                    
+                    subnet_list.append({
+                        "id": subnet["id"],
+                        "network": subnet["network"],
+                        "name": subnet["name"]
+                    })
                 
                 total_hosts = network.num_addresses - 2
                 available_ips = total_subnet_hosts - total_used_ips
@@ -303,6 +310,8 @@ def handle_supernets():
                         "available_ips": available_ips,
                         "utilization": round(utilization, 2),
                         "created_at": supernet["created_at"],
+                        "subnet_count": len(subnet_list),
+                        "subnets": subnet_list,
                     }
                 )
             except ipaddress.NetmaskValueError:
