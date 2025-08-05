@@ -1,14 +1,71 @@
 
 const API_BASE_URL = 'https://ip-tracker.fly.dev';
 
+const AUTH_CONFIG = {
+    username: atob('ZWUtaXB0cmFja2Vy'), // ee-iptracker
+    password: atob('blFFMGs1NFAlISFOVkc=') // nQE0k54P%!!NVG
+};
+
 let supernets = [];
 let subnets = [];
 let devices = [];
 let changelog = [];
 
-document.addEventListener('DOMContentLoaded', function() {
+function checkAuthentication() {
+    return sessionStorage.getItem('authenticated') === 'true';
+}
+
+function login(username, password) {
+    if (username === AUTH_CONFIG.username && password === AUTH_CONFIG.password) {
+        sessionStorage.setItem('authenticated', 'true');
+        showDashboard();
+        return true;
+    }
+    return false;
+}
+
+function logout() {
+    sessionStorage.removeItem('authenticated');
+    showLoginForm();
+}
+
+function showLoginForm() {
+    document.getElementById('loginContainer').style.display = 'block';
+    document.getElementById('dashboardContainer').style.display = 'none';
+}
+
+function showDashboard() {
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('dashboardContainer').style.display = 'block';
     setupEventListeners();
     loadDashboard();
+}
+
+function setupLoginEventListeners() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (login(username, password)) {
+                document.getElementById('loginError').style.display = 'none';
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('password').value = '';
+            }
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (checkAuthentication()) {
+        showDashboard();
+    } else {
+        showLoginForm();
+        setupLoginEventListeners();
+    }
 });
 
 function setupEventListeners() {
