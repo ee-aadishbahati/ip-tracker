@@ -77,6 +77,7 @@ def init_database():
             location TEXT,
             ip_address TEXT NOT NULL UNIQUE,
             hostname TEXT,
+            port_detail TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (subnet_id) REFERENCES subnets (id)
         )
@@ -583,6 +584,7 @@ def handle_devices():
                     "location": device["location"],
                     "ip_address": device["ip_address"],
                     "hostname": device["hostname"],
+                    "port_detail": device["port_detail"],
                     "created_at": device["created_at"],
                 }
             )
@@ -597,6 +599,7 @@ def handle_devices():
         location = data.get("location", "")
         ip_address = data.get("ip_address")
         hostname = data.get("hostname", "")
+        port_detail = data.get("port_detail", "")
 
         if not all([subnet_id, device_name, ip_address]):
             return jsonify({"error": "Missing required fields"}), 400
@@ -616,8 +619,8 @@ def handle_devices():
         try:
             cursor = conn.execute(
                 "INSERT INTO devices (subnet_id, device_name, role, "
-                "location, ip_address, hostname) VALUES (?, ?, ?, ?, ?, ?)",
-                (subnet_id, device_name, role, location, ip_address, hostname),
+                "location, ip_address, hostname, port_detail) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (subnet_id, device_name, role, location, ip_address, hostname, port_detail),
             )
             device_id = cursor.lastrowid
             conn.commit()

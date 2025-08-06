@@ -259,6 +259,7 @@ function renderDevices() {
             <td>${device.hostname || '-'}</td>
             <td>${device.role || '-'}</td>
             <td>${device.location || '-'}</td>
+            <td>${device.port_detail || '-'}</td>
             <td><span class="network-cidr">${device.subnet_network}</span></td>
             <td>${formatDate(device.created_at)}</td>
             <td>
@@ -569,7 +570,8 @@ async function saveDevice() {
         ip_address: document.getElementById('deviceIP').value,
         hostname: document.getElementById('deviceHostname').value,
         role: document.getElementById('deviceRole').value,
-        location: document.getElementById('deviceLocation').value
+        location: document.getElementById('deviceLocation').value,
+        port_detail: document.getElementById('devicePortDetail').value
     };
     
     try {
