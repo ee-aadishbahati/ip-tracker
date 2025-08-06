@@ -238,6 +238,7 @@ function renderSupernets() {
             </td>
         `;
         
+        
         row.dataset.supernetId = supernet.id;
         row.dataset.subnets = JSON.stringify(supernet.subnets || []);
         
