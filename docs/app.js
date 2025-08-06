@@ -209,6 +209,7 @@ function renderSupernets() {
             subnetDisplay = '<span class="text-muted">No subnets</span>';
         }
         
+        const utilizationClass = getUtilizationClass(supernet.utilization);
         row.innerHTML = `
             <td><code>${supernet.network}</code></td>
             <td>${supernet.name}</td>
@@ -216,6 +217,15 @@ function renderSupernets() {
             <td><code>${supernet.start_ip}</code></td>
             <td><code>${supernet.end_ip}</code></td>
             <td>${supernet.total_hosts.toLocaleString()}</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="utilization-bar me-2" style="width: 60px;">
+                        <div class="utilization-fill ${utilizationClass}" style="width: ${supernet.utilization}%"></div>
+                    </div>
+                    <span class="badge bg-${utilizationClass.replace('utilization-', '')}" style="color: black !important;">${supernet.utilization}%</span>
+                </div>
+            </td>
+            <td>${supernet.available_ips}</td>
             <td>${subnetDisplay}</td>
             <td>${new Date(supernet.created_at).toLocaleDateString()}</td>
             <td>
