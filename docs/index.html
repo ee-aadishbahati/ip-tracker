@@ -175,6 +175,11 @@
                     <i class="bi bi-clock-history"></i> Change Log
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="advanced-search-tab" data-bs-toggle="tab" data-bs-target="#advanced-search" type="button" role="tab">
+                    <i class="bi bi-search"></i> Advanced Search
+                </button>
+            </li>
         </ul>
 
         <div class="tab-content" id="mainTabsContent">
@@ -324,6 +329,78 @@
                             <ul class="pagination justify-content-center" id="changelogPagination">
                             </ul>
                         </nav>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="advanced-search" role="tabpanel">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Advanced Search</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <label for="advancedSearchTerm" class="form-label">Search Term</label>
+                                <input type="text" class="form-control" id="advancedSearchTerm" placeholder="Search across all data...">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="advancedSearchOperator" class="form-label">Search Type</label>
+                                <select class="form-select" id="advancedSearchOperator">
+                                    <option value="contains">Contains</option>
+                                    <option value="equals">Equals</option>
+                                    <option value="starts_with">Starts With</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <label for="advancedSearchEntityType" class="form-label">Entity Type</label>
+                                <select class="form-select" id="advancedSearchEntityType">
+                                    <option value="">All Types</option>
+                                    <option value="supernets">Supernets</option>
+                                    <option value="subnets">Subnets</option>
+                                    <option value="devices">Devices</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="advancedSearchRole" class="form-label">Device Role</label>
+                                <select class="form-select" id="advancedSearchRole">
+                                    <option value="">All Roles</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="advancedSearchLocation" class="form-label">Location</label>
+                                <select class="form-select" id="advancedSearchLocation">
+                                    <option value="">All Locations</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="advancedSearchPurpose" class="form-label">Subnet Purpose</label>
+                                <select class="form-select" id="advancedSearchPurpose">
+                                    <option value="">All Purposes</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <button type="button" class="btn btn-primary" onclick="performAdvancedSearch()">
+                                    <i class="bi bi-search"></i> Search
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" onclick="clearAdvancedSearch()">
+                                    <i class="bi bi-x-circle"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="advancedSearchResults">
+                            <div class="text-muted text-center py-4">
+                                <i class="bi bi-search fs-1"></i>
+                                <p class="mt-2">Enter search criteria and click Search to find results across all data.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
