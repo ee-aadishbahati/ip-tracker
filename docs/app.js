@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://ip-tracker.fly.dev';
 
 const AUTH_CONFIG = {
     token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZWUtaXB0cmFja2VyIiwicGFzcyI6Im5RRTBrNTRQJSEhTlZHIiwiZXhwIjoxNzU0NDgwNzY3LCJpc3MiOiJpcC10cmFja2VyIn0.signature',
