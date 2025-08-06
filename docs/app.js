@@ -1,5 +1,5 @@
 
-const API_BASE_URL = 'https://ip-tracker.fly.dev';
+const API_BASE_URL = 'http://localhost:5000';
 
 const AUTH_CONFIG = {
     token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZWUtaXB0cmFja2VyIiwicGFzcyI6Im5RRTBrNTRQJSEhTlZHIiwiZXhwIjoxNzU0NDgwNzY3LCJpc3MiOiJpcC10cmFja2VyIn0.signature',
@@ -37,6 +37,11 @@ let supernets = [];
 let subnets = [];
 let devices = [];
 let changelog = [];
+
+const ITEMS_PER_PAGE = 15;
+let currentSubnetPage = 1;
+let currentDevicePage = 1;
+let currentChangelogPage = 1;
 
 function checkAuthentication() {
     return sessionStorage.getItem('authenticated') === 'true';
@@ -329,7 +334,9 @@ function renderSubnets() {
     
     tbody.innerHTML = '';
     
-    subnets.forEach(subnet => {
+    const paginatedSubnets = paginateArray(subnets, currentSubnetPage);
+    
+    paginatedSubnets.forEach(subnet => {
         const utilizationClass = getUtilizationClass(subnet.utilization);
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -349,13 +356,18 @@ function renderSubnets() {
             </td>
             <td>${subnet.available_ips}</td>
             <td>
-                <button class="btn btn-sm btn-outline-danger" onclick="deleteSubnet(${subnet.id})">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editSubnet(${subnet.id})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteSubnet(${subnet.id})" title="Delete">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
         `;
         tbody.appendChild(row);
     });
+    
+    createPaginationControls(subnets.length, currentSubnetPage, 'subnetsPagination', 'goToSubnetPage');
 }
 
 function filterSubnets() {
@@ -564,7 +576,9 @@ function renderDevices() {
     
     tbody.innerHTML = '';
     
-    devices.forEach(device => {
+    const paginatedDevices = paginateArray(devices, currentDevicePage);
+    
+    paginatedDevices.forEach(device => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${device.device_name}</td>
@@ -585,6 +599,8 @@ function renderDevices() {
         `;
         tbody.appendChild(row);
     });
+    
+    createPaginationControls(devices.length, currentDevicePage, 'devicesPagination', 'goToDevicePage');
 }
 
 function filterDevices() {
@@ -707,7 +723,9 @@ function renderChangelog() {
     
     tbody.innerHTML = '';
     
-    changelog.forEach(entry => {
+    const paginatedChangelog = paginateArray(changelog, currentChangelogPage);
+    
+    paginatedChangelog.forEach(entry => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${new Date(entry.timestamp).toLocaleString()}</td>
@@ -718,6 +736,8 @@ function renderChangelog() {
         `;
         tbody.appendChild(row);
     });
+    
+    createPaginationControls(changelog.length, currentChangelogPage, 'changelogPagination', 'goToChangelogPage');
 }
 
 function updateSubnetDropdowns() {
@@ -880,6 +900,61 @@ function getUtilizationClass(utilization) {
 }
 
 
+
+function createPaginationControls(totalItems, currentPage, paginationId, onPageChange) {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const paginationContainer = document.getElementById(paginationId);
+    
+    if (!paginationContainer || totalPages <= 1) {
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '';
+    
+    paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="${onPageChange}(${currentPage - 1}); return false;">Previous</a>
+        </li>
+    `;
+    
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHTML += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="${onPageChange}(${i}); return false;">${i}</a>
+            </li>
+        `;
+    }
+    
+    paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="${onPageChange}(${currentPage + 1}); return false;">Next</a>
+        </li>
+    `;
+    
+    paginationContainer.innerHTML = paginationHTML;
+}
+
+function paginateArray(array, page) {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return array.slice(startIndex, endIndex);
+}
+
+function goToSubnetPage(page) {
+    currentSubnetPage = page;
+    renderSubnets();
+}
+
+function goToDevicePage(page) {
+    currentDevicePage = page;
+    renderDevices();
+}
+
+function goToChangelogPage(page) {
+    currentChangelogPage = page;
+    renderChangelog();
+}
 
 function toggleSubnetDetails(supernetId) {
     const row = document.querySelector(`tr[data-supernet-id="${supernetId}"]`);
