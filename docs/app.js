@@ -344,12 +344,18 @@ async function loadSubnets() {
 }
 
 function renderSubnets() {
+    filteredSubnets = subnets;
+    renderFilteredSubnets();
+}
+
+function renderFilteredSubnets() {
     const tbody = document.getElementById('subnetsTable');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
-    const paginatedSubnets = paginateArray(subnets, currentSubnetPage);
+    const dataToRender = filteredSubnets.length > 0 ? filteredSubnets : subnets;
+    const paginatedSubnets = paginateArray(dataToRender, currentSubnetPage);
     
     paginatedSubnets.forEach(subnet => {
         const utilizationClass = getUtilizationClass(subnet.utilization);
@@ -384,25 +390,29 @@ function renderSubnets() {
         tbody.appendChild(row);
     });
     
-    createPaginationControls(subnets.length, currentSubnetPage, 'subnetsPagination', 'goToSubnetPage');
+    createPaginationControls(dataToRender.length, currentSubnetPage, 'subnetsPagination', 'goToSubnetPage');
 }
+
+let filteredSubnets = [];
 
 function filterSubnets() {
     const searchTerm = document.getElementById('subnetSearch').value.toLowerCase();
     const supernetFilter = document.getElementById('subnetSupernetFilter').value;
-    const rows = document.querySelectorAll('#subnetsTable tr');
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        const matchesSearch = text.includes(searchTerm);
-        const matchesFilter = !supernetFilter || row.dataset.supernetId === supernetFilter;
-        row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+    filteredSubnets = subnets.filter(subnet => {
+        const matchesSearch = !searchTerm || 
+            subnet.network.toLowerCase().includes(searchTerm) ||
+            subnet.name.toLowerCase().includes(searchTerm) ||
+            (subnet.purpose && subnet.purpose.toLowerCase().includes(searchTerm)) ||
+            (subnet.gateway && subnet.gateway.toLowerCase().includes(searchTerm));
+        
+        const matchesFilter = !supernetFilter || subnet.supernet_id.toString() === supernetFilter;
+        
+        return matchesSearch && matchesFilter;
     });
     
-    if (supernetFilter) {
-        currentSubnetPage = 1;
-        renderSubnets();
-    }
+    currentSubnetPage = 1;
+    renderFilteredSubnets();
 }
 
 function showSubnetModal() {
@@ -625,12 +635,18 @@ async function loadDevices() {
 }
 
 function renderDevices() {
+    filteredDevices = devices;
+    renderFilteredDevices();
+}
+
+function renderFilteredDevices() {
     const tbody = document.getElementById('devicesTable');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
-    const paginatedDevices = paginateArray(devices, currentDevicePage);
+    const dataToRender = filteredDevices.length > 0 ? filteredDevices : devices;
+    const paginatedDevices = paginateArray(dataToRender, currentDevicePage);
     
     paginatedDevices.forEach(device => {
         const row = document.createElement('tr');
@@ -656,25 +672,32 @@ function renderDevices() {
         tbody.appendChild(row);
     });
     
-    createPaginationControls(devices.length, currentDevicePage, 'devicesPagination', 'goToDevicePage');
+    createPaginationControls(dataToRender.length, currentDevicePage, 'devicesPagination', 'goToDevicePage');
 }
+
+let filteredDevices = [];
 
 function filterDevices() {
     const searchTerm = document.getElementById('deviceSearch').value.toLowerCase();
     const subnetFilter = document.getElementById('deviceSubnetFilter').value;
-    const rows = document.querySelectorAll('#devicesTable tr');
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        const matchesSearch = text.includes(searchTerm);
-        const matchesFilter = !subnetFilter || row.dataset.subnetId === subnetFilter;
-        row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+    filteredDevices = devices.filter(device => {
+        const matchesSearch = !searchTerm || 
+            device.device_name.toLowerCase().includes(searchTerm) ||
+            device.ip_address.toLowerCase().includes(searchTerm) ||
+            (device.hostname && device.hostname.toLowerCase().includes(searchTerm)) ||
+            (device.role && device.role.toLowerCase().includes(searchTerm)) ||
+            (device.location && device.location.toLowerCase().includes(searchTerm)) ||
+            (device.port_detail && device.port_detail.toLowerCase().includes(searchTerm)) ||
+            (device.subnet_name && device.subnet_name.toLowerCase().includes(searchTerm));
+        
+        const matchesFilter = !subnetFilter || device.subnet_id.toString() === subnetFilter;
+        
+        return matchesSearch && matchesFilter;
     });
     
-    if (subnetFilter) {
-        currentDevicePage = 1;
-        renderDevices();
-    }
+    currentDevicePage = 1;
+    renderFilteredDevices();
 }
 
 function showDeviceModal() {
@@ -1018,12 +1041,20 @@ function paginateArray(array, page) {
 
 function goToSubnetPage(page) {
     currentSubnetPage = page;
-    renderSubnets();
+    if (filteredSubnets.length > 0) {
+        renderFilteredSubnets();
+    } else {
+        renderSubnets();
+    }
 }
 
 function goToDevicePage(page) {
     currentDevicePage = page;
-    renderDevices();
+    if (filteredDevices.length > 0) {
+        renderFilteredDevices();
+    } else {
+        renderDevices();
+    }
 }
 
 function goToChangelogPage(page) {
