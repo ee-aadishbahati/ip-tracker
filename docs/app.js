@@ -167,8 +167,12 @@ async function loadDashboard() {
         
         await loadSupernets();
         await loadSubnets();
+        await loadDevices();
         await loadSubnetFilters();
         await loadDeviceFilters();
+        
+        document.getElementById('subnetCount').textContent = subnets.length;
+        document.getElementById('deviceCount').textContent = devices.length;
     } catch (error) {
         console.error('Error loading dashboard:', error);
     }
