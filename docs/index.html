@@ -449,10 +449,34 @@
                             <label for="subnetAssignedTo" class="form-label">Assigned To</label>
                             <input type="text" class="form-control" id="subnetAssignedTo">
                         </div>
+                        <!-- Gateway Mode Selection -->
                         <div class="mb-3">
+                            <label class="form-label">Gateway Mode</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gatewayMode" id="gatewayAuto" value="auto" checked>
+                                <label class="form-check-label" for="gatewayAuto">
+                                    Auto (first available IP)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gatewayMode" id="gatewayManual" value="manual">
+                                <label class="form-check-label" for="gatewayManual">
+                                    Manual (specify IP)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gatewayMode" id="gatewayNotApplicable" value="not_applicable">
+                                <label class="form-check-label" for="gatewayNotApplicable">
+                                    Not Applicable (no gateway needed)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Gateway IP Field -->
+                        <div class="mb-3" id="gatewayIpField">
                             <label for="subnetGateway" class="form-label">Gateway IP</label>
                             <input type="text" class="form-control" id="subnetGateway" placeholder="e.g., 10.10.1.1">
-                            <div class="form-text">Auto-calculated for allocation modes</div>
+                            <div class="form-text">Auto-calculated for allocation modes and auto gateway mode</div>
                         </div>
                     </form>
                 </div>

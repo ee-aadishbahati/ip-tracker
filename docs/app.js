@@ -360,7 +360,7 @@ function renderSubnets() {
             <td>${subnet.name}</td>
             <td>${subnet.purpose || '-'}</td>
             <td>${subnet.assigned_to || '-'}</td>
-            <td><span class="ip-address">${subnet.gateway || '-'}</span></td>
+            <td><span class="ip-address">${subnet.gateway || 'Not Applicable'}</span></td>
             <td>${subnet.total_hosts}</td>
             <td>
                 <div class="d-flex align-items-center">
@@ -417,10 +417,20 @@ function showSubnetModal() {
         setupSubnetModeListeners();
         const manualMode = document.getElementById('manualMode');
         const manualFields = document.getElementById('manualFields');
+        const gatewayIpField = document.getElementById('gatewayIpField');
+        
         if (manualMode && manualFields) {
             manualMode.checked = true;
             manualFields.style.display = 'block';
             document.getElementById('subnetNetwork').setAttribute('required', 'required');
+        }
+        
+        const gatewayAuto = document.getElementById('gatewayAuto');
+        if (gatewayAuto && gatewayIpField) {
+            gatewayAuto.checked = true;
+            gatewayIpField.style.display = 'block';
+            document.getElementById('subnetGateway').placeholder = 'Auto-calculated';
+            document.getElementById('subnetGateway').readOnly = true;
         }
     }, 100);
     
@@ -457,6 +467,29 @@ function setupSubnetModeListeners() {
             });
         });
     }
+    
+    const gatewayRadios = document.querySelectorAll('input[name="gatewayMode"]');
+    gatewayRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const gatewayIpField = document.getElementById('gatewayIpField');
+            const gatewayInput = document.getElementById('subnetGateway');
+            
+            if (this.value === 'not_applicable') {
+                gatewayIpField.style.display = 'none';
+                gatewayInput.value = '';
+            } else {
+                gatewayIpField.style.display = 'block';
+                if (this.value === 'auto') {
+                    gatewayInput.placeholder = 'Auto-calculated';
+                    gatewayInput.readOnly = true;
+                    gatewayInput.value = '';
+                } else {
+                    gatewayInput.placeholder = 'e.g., 10.10.1.1';
+                    gatewayInput.readOnly = false;
+                }
+            }
+        });
+    });
 }
 
 async function saveSubnetModal() {
@@ -464,6 +497,7 @@ async function saveSubnetModal() {
     const name = document.getElementById('subnetName').value;
     const purpose = document.getElementById('subnetPurpose').value;
     const assignedTo = document.getElementById('subnetAssignedTo').value;
+    const gatewayMode = document.querySelector('input[name="gatewayMode"]:checked').value;
     const editId = document.getElementById('subnetModal').dataset.editId;
     
     if (!supernetId || !name) {
@@ -474,7 +508,7 @@ async function saveSubnetModal() {
     try {
         if (editId) {
             const network = document.getElementById('subnetNetwork').value;
-            const gateway = document.getElementById('subnetGateway').value;
+            const gateway = gatewayMode === 'not_applicable' ? '' : document.getElementById('subnetGateway').value;
             
             if (!network) {
                 showAlert('Please fill in all required fields', 'warning');
@@ -487,7 +521,8 @@ async function saveSubnetModal() {
                 name: name,
                 purpose: purpose,
                 assigned_to: assignedTo,
-                gateway: gateway
+                gateway: gateway,
+                gateway_mode: gatewayMode
             });
             showAlert('Subnet updated successfully', 'success');
         } else {
@@ -495,7 +530,7 @@ async function saveSubnetModal() {
             
             if (allocationMode === 'manual') {
                 const network = document.getElementById('subnetNetwork').value;
-                const gateway = document.getElementById('subnetGateway').value;
+                const gateway = gatewayMode === 'not_applicable' ? '' : document.getElementById('subnetGateway').value;
                 
                 if (!network) {
                     showAlert('Please fill in all required fields', 'warning');
@@ -508,7 +543,8 @@ async function saveSubnetModal() {
                     name: name,
                     purpose: purpose,
                     assigned_to: assignedTo,
-                    gateway: gateway
+                    gateway: gateway,
+                    gateway_mode: gatewayMode
                 });
                 showAlert('Subnet created successfully', 'success');
             } else {
@@ -516,7 +552,8 @@ async function saveSubnetModal() {
                     mode: allocationMode,
                     name: name,
                     purpose: purpose,
-                    assigned_to: assignedTo
+                    assigned_to: assignedTo,
+                    gateway_mode: gatewayMode
                 };
                 
                 if (allocationMode === 'by_mask') {
