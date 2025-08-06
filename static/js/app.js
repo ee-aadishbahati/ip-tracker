@@ -46,6 +46,8 @@ function setupEventListeners() {
                 loadDevices();
             } else if (target === '#changelog') {
                 loadChangelog();
+            } else if (target === '#advanced-search') {
+                loadAdvancedSearch();
             }
         });
     }
@@ -849,4 +851,282 @@ function toggleSubnetDetails(supernetId) {
     `;
     
     row.parentNode.insertBefore(detailsRow, row.nextSibling);
+}
+
+let advancedSearchResults = [];
+let currentAdvancedSearchPage = 1;
+
+function loadAdvancedSearch() {
+    populateAdvancedSearchFilters();
+}
+
+function populateAdvancedSearchFilters() {
+    const roleSelect = document.getElementById('advancedSearchRole');
+    if (roleSelect && devices) {
+        const roles = [...new Set(devices.map(d => d.role).filter(r => r))];
+        roleSelect.innerHTML = '<option value="">All Roles</option>';
+        roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role;
+            option.textContent = role;
+            roleSelect.appendChild(option);
+        });
+    }
+    
+    const locationSelect = document.getElementById('advancedSearchLocation');
+    if (locationSelect && devices) {
+        const locations = [...new Set(devices.map(d => d.location).filter(l => l))];
+        locationSelect.innerHTML = '<option value="">All Locations</option>';
+        locations.forEach(location => {
+            const option = document.createElement('option');
+            option.value = location;
+            option.textContent = location;
+            locationSelect.appendChild(option);
+        });
+    }
+    
+    const purposeSelect = document.getElementById('advancedSearchPurpose');
+    if (purposeSelect && subnets) {
+        const purposes = [...new Set(subnets.map(s => s.purpose).filter(p => p))];
+        purposeSelect.innerHTML = '<option value="">All Purposes</option>';
+        purposes.forEach(purpose => {
+            const option = document.createElement('option');
+            option.value = purpose;
+            option.textContent = purpose;
+            purposeSelect.appendChild(option);
+        });
+    }
+}
+
+function performAdvancedSearch() {
+    const searchTerm = document.getElementById('advancedSearchTerm').value.toLowerCase().trim();
+    const operator = document.getElementById('advancedSearchOperator').value;
+    const entityType = document.getElementById('advancedSearchEntityType').value;
+    const roleFilter = document.getElementById('advancedSearchRole').value;
+    const locationFilter = document.getElementById('advancedSearchLocation').value;
+    const purposeFilter = document.getElementById('advancedSearchPurpose').value;
+    
+    if (!searchTerm && !roleFilter && !locationFilter && !purposeFilter) {
+        showAlert('Please enter search criteria', 'warning');
+        return;
+    }
+    
+    advancedSearchResults = [];
+    
+    const matchesSearch = (text, searchTerm, operator) => {
+        if (!searchTerm) return true;
+        if (!text) return false;
+        text = text.toLowerCase();
+        switch (operator) {
+            case 'equals': return text === searchTerm;
+            case 'starts_with': return text.startsWith(searchTerm);
+            case 'contains':
+            default: return text.includes(searchTerm);
+        }
+    };
+    
+    if (!entityType || entityType === 'supernets') {
+        supernets.forEach(supernet => {
+            const matches = matchesSearch(supernet.network, searchTerm, operator) ||
+                           matchesSearch(supernet.name, searchTerm, operator) ||
+                           matchesSearch(supernet.description, searchTerm, operator);
+            
+            if (matches) {
+                advancedSearchResults.push({
+                    type: 'supernet',
+                    data: supernet,
+                    displayText: `${supernet.network} - ${supernet.name}`
+                });
+            }
+        });
+    }
+    
+    if (!entityType || entityType === 'subnets') {
+        subnets.forEach(subnet => {
+            const matches = (matchesSearch(subnet.network, searchTerm, operator) ||
+                            matchesSearch(subnet.name, searchTerm, operator) ||
+                            matchesSearch(subnet.purpose, searchTerm, operator) ||
+                            matchesSearch(subnet.gateway, searchTerm, operator)) &&
+                           (!purposeFilter || subnet.purpose === purposeFilter);
+            
+            if (matches) {
+                advancedSearchResults.push({
+                    type: 'subnet',
+                    data: subnet,
+                    displayText: `${subnet.network} - ${subnet.name}`
+                });
+            }
+        });
+    }
+    
+    if (!entityType || entityType === 'devices') {
+        devices.forEach(device => {
+            const matches = (matchesSearch(device.device_name, searchTerm, operator) ||
+                            matchesSearch(device.ip_address, searchTerm, operator) ||
+                            matchesSearch(device.hostname, searchTerm, operator) ||
+                            matchesSearch(device.role, searchTerm, operator) ||
+                            matchesSearch(device.location, searchTerm, operator) ||
+                            matchesSearch(device.port_detail, searchTerm, operator)) &&
+                           (!roleFilter || device.role === roleFilter) &&
+                           (!locationFilter || device.location === locationFilter);
+            
+            if (matches) {
+                advancedSearchResults.push({
+                    type: 'device',
+                    data: device,
+                    displayText: `${device.device_name} (${device.ip_address})`
+                });
+            }
+        });
+    }
+    
+    currentAdvancedSearchPage = 1;
+    renderAdvancedSearchResults();
+}
+
+function renderAdvancedSearchResults() {
+    const resultsContainer = document.getElementById('advancedSearchResults');
+    if (!resultsContainer) return;
+    
+    if (advancedSearchResults.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="text-muted text-center py-4">
+                <i class="bi bi-search fs-1"></i>
+                <p class="mt-2">No results found matching your search criteria.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const groupedResults = {
+        supernet: advancedSearchResults.filter(r => r.type === 'supernet'),
+        subnet: advancedSearchResults.filter(r => r.type === 'subnet'),
+        device: advancedSearchResults.filter(r => r.type === 'device')
+    };
+    
+    let html = `<div class="mb-3"><strong>Found ${advancedSearchResults.length} results</strong></div>`;
+    
+    if (groupedResults.supernet.length > 0) {
+        html += `
+            <div class="mb-4">
+                <h6 class="text-primary"><i class="bi bi-globe"></i> Supernets (${groupedResults.supernet.length})</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Network</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Total Hosts</th>
+                                <th>Utilization</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        groupedResults.supernet.forEach(result => {
+            const supernet = result.data;
+            html += `
+                <tr>
+                    <td><code>${supernet.network}</code></td>
+                    <td>${supernet.name}</td>
+                    <td>${supernet.description || '-'}</td>
+                    <td>${supernet.total_hosts || 0}</td>
+                    <td><span class="badge bg-info">${supernet.utilization || 0}%</span></td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div></div>';
+    }
+    
+    if (groupedResults.subnet.length > 0) {
+        html += `
+            <div class="mb-4">
+                <h6 class="text-success"><i class="bi bi-diagram-3"></i> Subnets (${groupedResults.subnet.length})</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Network</th>
+                                <th>Name</th>
+                                <th>Purpose</th>
+                                <th>Valid Range</th>
+                                <th>Gateway</th>
+                                <th>Utilization</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        groupedResults.subnet.forEach(result => {
+            const subnet = result.data;
+            const utilizationClass = getUtilizationClass(subnet.utilization);
+            html += `
+                <tr>
+                    <td><code>${subnet.network}</code></td>
+                    <td>${subnet.name}</td>
+                    <td>${subnet.purpose || '-'}</td>
+                    <td><span class="ip-address">${subnet.start_ip} - ${subnet.end_ip}</span></td>
+                    <td><span class="ip-address">${subnet.gateway || '-'}</span></td>
+                    <td><span class="badge ${utilizationClass}">${subnet.utilization || 0}%</span></td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div></div>';
+    }
+    
+    if (groupedResults.device.length > 0) {
+        html += `
+            <div class="mb-4">
+                <h6 class="text-warning"><i class="bi bi-device-hdd"></i> Devices (${groupedResults.device.length})</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Device Name</th>
+                                <th>IP Address</th>
+                                <th>Hostname</th>
+                                <th>Role</th>
+                                <th>Location</th>
+                                <th>Port Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        groupedResults.device.forEach(result => {
+            const device = result.data;
+            html += `
+                <tr>
+                    <td>${device.device_name}</td>
+                    <td><span class="ip-address">${device.ip_address}</span></td>
+                    <td>${device.hostname || '-'}</td>
+                    <td>${device.role || '-'}</td>
+                    <td>${device.location || '-'}</td>
+                    <td>${device.port_detail || '-'}</td>
+                </tr>
+            `;
+        });
+        html += '</tbody></table></div></div>';
+    }
+    
+    resultsContainer.innerHTML = html;
+}
+
+function clearAdvancedSearch() {
+    document.getElementById('advancedSearchTerm').value = '';
+    document.getElementById('advancedSearchOperator').value = 'contains';
+    document.getElementById('advancedSearchEntityType').value = '';
+    document.getElementById('advancedSearchRole').value = '';
+    document.getElementById('advancedSearchLocation').value = '';
+    document.getElementById('advancedSearchPurpose').value = '';
+    
+    const resultsContainer = document.getElementById('advancedSearchResults');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = `
+            <div class="text-muted text-center py-4">
+                <i class="bi bi-search fs-1"></i>
+                <p class="mt-2">Enter search criteria and click Search to find results across all data.</p>
+            </div>
+        `;
+    }
+    
+    advancedSearchResults = [];
 }
