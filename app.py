@@ -749,7 +749,7 @@ def export_data():
             "Purpose/Role",
             "Location/Assigned To",
             "Gateway/Hostname",
-            "Created",
+            "Port Detail",
         ]
     )
 
@@ -764,7 +764,7 @@ def export_data():
                 supernet["description"] or "",
                 "",
                 "",
-                supernet["created_at"],
+                "",
             ]
         )
 
@@ -786,7 +786,7 @@ def export_data():
                 subnet["purpose"] or "",
                 subnet["assigned_to"] or "",
                 subnet["gateway"] or "",
-                subnet["created_at"],
+                "",
             ]
         )
 
@@ -808,7 +808,7 @@ def export_data():
                 device["role"] or "",
                 device["location"] or "",
                 device["hostname"] or "",
-                device["created_at"],
+                device["port_detail"] or "",
             ]
         )
 
@@ -918,25 +918,49 @@ def import_data():
                             (row[0],),
                         ).fetchone()
                         if subnet and validate_ip_in_subnet(row[2], subnet["network"]):
-                            cursor = conn.execute(
-                                "INSERT INTO devices (subnet_id, device_name, "
-                                "ip_address, hostname, role, location) "
-                                "VALUES (?, ?, ?, ?, ?, ?)",
-                                (
-                                    subnet["id"],
-                                    row[1],
-                                    row[2],
-                                    row[3] if len(row) > 3 else "",
-                                    row[4] if len(row) > 4 else "",
-                                    row[5] if len(row) > 5 else "",
-                                ),
-                            )
-                            log_change(
-                                "IMPORT",
-                                "device",
-                                cursor.lastrowid,
-                                f"Imported device {row[1]} ({row[2]})",
-                            )
+                            existing_device = conn.execute(
+                                "SELECT id FROM devices WHERE ip_address = ?", (row[2],)
+                            ).fetchone()
+                            
+                            if existing_device:
+                                conn.execute(
+                                    "UPDATE devices SET device_name = ?, hostname = ?, role = ?, location = ?, port_detail = ? WHERE ip_address = ?",
+                                    (
+                                        row[1],
+                                        row[3] if len(row) > 3 else "",
+                                        row[4] if len(row) > 4 else "",
+                                        row[5] if len(row) > 5 else "",
+                                        row[6] if len(row) > 6 else "",
+                                        row[2],
+                                    ),
+                                )
+                                log_change(
+                                    "IMPORT",
+                                    "device",
+                                    existing_device["id"],
+                                    f"Updated device {row[1]} ({row[2]})",
+                                )
+                            else:
+                                cursor = conn.execute(
+                                    "INSERT INTO devices (subnet_id, device_name, "
+                                    "ip_address, hostname, role, location, port_detail) "
+                                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                    (
+                                        subnet["id"],
+                                        row[1],
+                                        row[2],
+                                        row[3] if len(row) > 3 else "",
+                                        row[4] if len(row) > 4 else "",
+                                        row[5] if len(row) > 5 else "",
+                                        row[6] if len(row) > 6 else "",
+                                    ),
+                                )
+                                log_change(
+                                    "IMPORT",
+                                    "device",
+                                    cursor.lastrowid,
+                                    f"Imported device {row[1]} ({row[2]})",
+                                )
                             imported_count += 1
                     except (ipaddress.AddressValueError, sqlite3.IntegrityError):
                         continue
