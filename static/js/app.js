@@ -215,10 +215,17 @@ function renderSupernets() {
 }
 
 function renderSubnets() {
+    filteredSubnets = subnets;
+    renderFilteredSubnets();
+}
+
+function renderFilteredSubnets() {
     const tbody = document.getElementById('subnetsTable');
     tbody.innerHTML = '';
     
-    subnets.forEach(subnet => {
+    const dataToRender = filteredSubnets.length > 0 ? filteredSubnets : subnets;
+    
+    dataToRender.forEach(subnet => {
         const utilizationClass = getUtilizationClass(subnet.utilization);
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -248,10 +255,17 @@ function renderSubnets() {
 }
 
 function renderDevices() {
+    filteredDevices = devices;
+    renderFilteredDevices();
+}
+
+function renderFilteredDevices() {
     const tbody = document.getElementById('devicesTable');
     tbody.innerHTML = '';
     
-    devices.forEach(device => {
+    const dataToRender = filteredDevices.length > 0 ? filteredDevices : devices;
+    
+    dataToRender.forEach(device => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${device.device_name}</td>
@@ -721,42 +735,49 @@ function filterSupernets() {
     });
 }
 
+let filteredSubnets = [];
+
 function filterSubnets() {
     const searchTerm = document.getElementById('subnetSearch').value.toLowerCase();
     const supernetFilter = document.getElementById('subnetSupernetFilter').value;
-    const rows = document.querySelectorAll('#subnetsTable tr');
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        const matchesSearch = text.includes(searchTerm);
+    filteredSubnets = subnets.filter(subnet => {
+        const matchesSearch = !searchTerm || 
+            subnet.network.toLowerCase().includes(searchTerm) ||
+            subnet.name.toLowerCase().includes(searchTerm) ||
+            (subnet.purpose && subnet.purpose.toLowerCase().includes(searchTerm)) ||
+            (subnet.gateway && subnet.gateway.toLowerCase().includes(searchTerm));
         
-        let matchesFilter = true;
-        if (supernetFilter) {
-            const subnet = subnets.find(s => s.network === row.querySelector('.network-cidr').textContent);
-            matchesFilter = subnet && subnet.supernet_id == supernetFilter;
-        }
+        const matchesFilter = !supernetFilter || subnet.supernet_id.toString() === supernetFilter;
         
-        row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+        return matchesSearch && matchesFilter;
     });
+    
+    renderFilteredSubnets();
 }
+
+let filteredDevices = [];
 
 function filterDevices() {
     const searchTerm = document.getElementById('deviceSearch').value.toLowerCase();
     const subnetFilter = document.getElementById('deviceSubnetFilter').value;
-    const rows = document.querySelectorAll('#devicesTable tr');
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        const matchesSearch = text.includes(searchTerm);
+    filteredDevices = devices.filter(device => {
+        const matchesSearch = !searchTerm || 
+            device.device_name.toLowerCase().includes(searchTerm) ||
+            device.ip_address.toLowerCase().includes(searchTerm) ||
+            (device.hostname && device.hostname.toLowerCase().includes(searchTerm)) ||
+            (device.role && device.role.toLowerCase().includes(searchTerm)) ||
+            (device.location && device.location.toLowerCase().includes(searchTerm)) ||
+            (device.port_detail && device.port_detail.toLowerCase().includes(searchTerm)) ||
+            (device.subnet_network && device.subnet_network.toLowerCase().includes(searchTerm));
         
-        let matchesFilter = true;
-        if (subnetFilter) {
-            const device = devices.find(d => d.ip_address === row.querySelector('.ip-address').textContent);
-            matchesFilter = device && device.subnet_id == subnetFilter;
-        }
+        const matchesFilter = !subnetFilter || device.subnet_id.toString() === subnetFilter;
         
-        row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
+        return matchesSearch && matchesFilter;
     });
+    
+    renderFilteredDevices();
 }
 
 function getUtilizationClass(utilization) {
