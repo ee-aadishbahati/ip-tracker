@@ -645,6 +645,7 @@ function renderDevices() {
             <td>${device.hostname || ''}</td>
             <td>${device.role || ''}</td>
             <td>${device.location || ''}</td>
+            <td>${device.port_detail || '-'}</td>
             <td>${device.subnet_name || ''}</td>
             <td>${new Date(device.created_at).toLocaleDateString()}</td>
             <td>
@@ -713,7 +714,8 @@ async function saveDeviceModal() {
                 ip_address: ipAddress,
                 hostname: hostname,
                 role: role,
-                location: location
+                location: location,
+                port_detail: document.getElementById('devicePortDetail').value
             });
             showAlert('Device updated successfully', 'success');
         } else {
@@ -723,7 +725,8 @@ async function saveDeviceModal() {
                 ip_address: ipAddress,
                 hostname: hostname,
                 role: role,
-                location: location
+                location: location,
+                port_detail: document.getElementById('devicePortDetail').value
             });
             showAlert('Device created successfully', 'success');
         }
@@ -751,6 +754,7 @@ async function editDevice(id) {
     document.getElementById('deviceHostname').value = device.hostname || '';
     document.getElementById('deviceRole').value = device.role || '';
     document.getElementById('deviceLocation').value = device.location || '';
+    document.getElementById('devicePortDetail').value = device.port_detail || '';
     document.getElementById('deviceModal').dataset.editId = id;
     document.querySelector('#deviceModal .modal-title').textContent = 'Edit Device';
     document.querySelector('#deviceModal .btn-info').textContent = 'Update Device';
