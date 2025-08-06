@@ -348,19 +348,29 @@ function showSubnetModal() {
         setupSubnetModeListeners();
         const manualMode = document.getElementById('manualMode');
         const manualFields = document.getElementById('manualFields');
+        const gatewayAuto = document.getElementById('gatewayAuto');
+        const manualGatewayFields = document.getElementById('manualGatewayFields');
+        
         if (manualMode && manualFields) {
             manualMode.checked = true;
             manualFields.style.display = 'block';
             document.getElementById('subnetNetwork').setAttribute('required', 'required');
+        }
+        
+        if (gatewayAuto && manualGatewayFields) {
+            gatewayAuto.checked = true;
+            manualGatewayFields.style.display = 'none';
         }
     }, 100);
 }
 
 function setupSubnetModeListeners() {
     const modeRadios = document.querySelectorAll('input[name="allocationMode"]');
+    const gatewayRadios = document.querySelectorAll('input[name="gatewayMode"]');
     const manualFields = document.getElementById('manualFields');
     const byMaskFields = document.getElementById('byMaskFields');
     const byHostsFields = document.getElementById('byHostsFields');
+    const manualGatewayFields = document.getElementById('manualGatewayFields');
     
     if (modeRadios.length > 0 && manualFields && byMaskFields && byHostsFields) {
         modeRadios.forEach(radio => {
@@ -382,6 +392,20 @@ function setupSubnetModeListeners() {
                 } else if (this.value === 'by_hosts') {
                     byHostsFields.style.display = 'block';
                     document.getElementById('subnetHostCount').setAttribute('required', 'required');
+                }
+            });
+        });
+    }
+    
+    if (gatewayRadios.length > 0 && manualGatewayFields) {
+        gatewayRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'manual') {
+                    manualGatewayFields.style.display = 'block';
+                    document.getElementById('subnetGateway').setAttribute('required', 'required');
+                } else {
+                    manualGatewayFields.style.display = 'none';
+                    document.getElementById('subnetGateway').removeAttribute('required');
                 }
             });
         });
@@ -447,13 +471,23 @@ async function saveSubnet() {
     const assignedTo = document.getElementById('subnetAssignedTo').value;
     
     if (allocationMode === 'manual') {
+        const gatewayMode = document.querySelector('input[name="gatewayMode"]:checked').value;
+        let gateway = '';
+        
+        if (gatewayMode === 'manual') {
+            gateway = document.getElementById('subnetGateway').value;
+        } else if (gatewayMode === 'not_applicable') {
+            gateway = '';
+        }
+        
         const data = {
             supernet_id: supernetId,
             network: document.getElementById('subnetNetwork').value,
             name: name,
             purpose: purpose,
             assigned_to: assignedTo,
-            gateway: document.getElementById('subnetGateway').value
+            gateway: gateway,
+            gateway_mode: gatewayMode
         };
         
         try {
@@ -476,11 +510,14 @@ async function saveSubnet() {
             showAlert('Error creating subnet: ' + error.message, 'danger');
         }
     } else {
+        const gatewayMode = document.querySelector('input[name="gatewayMode"]:checked').value;
+        
         const data = {
             mode: allocationMode,
             name: name,
             purpose: purpose,
-            assigned_to: assignedTo
+            assigned_to: assignedTo,
+            gateway_mode: gatewayMode
         };
         
         if (allocationMode === 'by_mask') {

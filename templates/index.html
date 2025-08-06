@@ -408,9 +408,33 @@
                         <input type="text" class="form-control" id="subnetAssignedTo" placeholder="e.g., IT Department">
                     </div>
                     <div class="mb-3">
-                        <label for="subnetGateway" class="form-label">Gateway IP</label>
-                        <input type="text" class="form-control" id="subnetGateway" placeholder="e.g., 10.10.1.1">
-                        <div class="form-text">Must be within the subnet range (auto-calculated for allocation modes)</div>
+                        <label class="form-label">Gateway Configuration</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gatewayMode" id="gatewayAuto" value="auto" checked>
+                            <label class="form-check-label" for="gatewayAuto">
+                                Auto-assign gateway (first available IP)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gatewayMode" id="gatewayManual" value="manual">
+                            <label class="form-check-label" for="gatewayManual">
+                                Specify custom gateway IP
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gatewayMode" id="gatewayNA" value="not_applicable">
+                            <label class="form-check-label" for="gatewayNA">
+                                Not Applicable (no gateway needed)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="manualGatewayFields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="subnetGateway" class="form-label">Gateway IP</label>
+                            <input type="text" class="form-control" id="subnetGateway" placeholder="e.g., 10.10.1.1">
+                            <div class="form-text">Must be within the subnet range</div>
+                        </div>
                     </div>
                 </form>
             </div>
