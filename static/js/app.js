@@ -225,7 +225,7 @@ function renderSubnets() {
             <td><span class="network-cidr">${subnet.network}</span></td>
             <td>${subnet.name}</td>
             <td>${subnet.purpose || '-'}</td>
-            <td>${subnet.assigned_to || '-'}</td>
+            <td><span class="ip-address">${subnet.start_ip} - ${subnet.end_ip}</span></td>
             <td><span class="ip-address">${subnet.gateway || '-'}</span></td>
             <td>${subnet.total_hosts}</td>
             <td>
@@ -469,7 +469,6 @@ async function saveSubnet() {
     const supernetId = parseInt(document.getElementById('subnetSupernet').value);
     const name = document.getElementById('subnetName').value;
     const purpose = document.getElementById('subnetPurpose').value;
-    const assignedTo = document.getElementById('subnetAssignedTo').value;
     
     if (allocationMode === 'manual') {
         const gatewayMode = document.querySelector('input[name="gatewayMode"]:checked').value;
@@ -486,7 +485,6 @@ async function saveSubnet() {
             network: document.getElementById('subnetNetwork').value,
             name: name,
             purpose: purpose,
-            assigned_to: assignedTo,
             gateway: gateway,
             gateway_mode: gatewayMode
         };
@@ -517,7 +515,6 @@ async function saveSubnet() {
             mode: allocationMode,
             name: name,
             purpose: purpose,
-            assigned_to: assignedTo,
             gateway_mode: gatewayMode
         };
         

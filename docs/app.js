@@ -359,7 +359,7 @@ function renderSubnets() {
             <td><code>${cidrToSubnetMask(subnet.network)}</code></td>
             <td>${subnet.name}</td>
             <td>${subnet.purpose || '-'}</td>
-            <td>${subnet.assigned_to || '-'}</td>
+            <td><span class="ip-address">${subnet.start_ip} - ${subnet.end_ip}</span></td>
             <td><span class="ip-address">${subnet.gateway || 'Not Applicable'}</span></td>
             <td>${subnet.total_hosts}</td>
             <td>
@@ -496,7 +496,6 @@ async function saveSubnetModal() {
     const supernetId = document.getElementById('subnetSupernet').value;
     const name = document.getElementById('subnetName').value;
     const purpose = document.getElementById('subnetPurpose').value;
-    const assignedTo = document.getElementById('subnetAssignedTo').value;
     const gatewayMode = document.querySelector('input[name="gatewayMode"]:checked').value;
     const editId = document.getElementById('subnetModal').dataset.editId;
     
@@ -520,7 +519,6 @@ async function saveSubnetModal() {
                 network: network,
                 name: name,
                 purpose: purpose,
-                assigned_to: assignedTo,
                 gateway: gateway,
                 gateway_mode: gatewayMode
             });
@@ -542,8 +540,7 @@ async function saveSubnetModal() {
                     network: network,
                     name: name,
                     purpose: purpose,
-                    assigned_to: assignedTo,
-                    gateway: gateway,
+                        gateway: gateway,
                     gateway_mode: gatewayMode
                 });
                 showAlert('Subnet created successfully', 'success');
@@ -552,8 +549,7 @@ async function saveSubnetModal() {
                     mode: allocationMode,
                     name: name,
                     purpose: purpose,
-                    assigned_to: assignedTo,
-                    gateway_mode: gatewayMode
+                        gateway_mode: gatewayMode
                 };
                 
                 if (allocationMode === 'by_mask') {
@@ -596,7 +592,6 @@ async function editSubnet(id) {
     document.getElementById('subnetNetwork').value = subnet.network;
     document.getElementById('subnetName').value = subnet.name;
     document.getElementById('subnetPurpose').value = subnet.purpose || '';
-    document.getElementById('subnetAssignedTo').value = subnet.assigned_to || '';
     document.getElementById('subnetGateway').value = subnet.gateway || '';
     document.getElementById('subnetModal').dataset.editId = id;
     document.querySelector('#subnetModal .modal-title').textContent = 'Edit Subnet';
