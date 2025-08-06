@@ -426,6 +426,7 @@ def handle_subnets():
         purpose = data.get("purpose", "")
         assigned_to = data.get("assigned_to", "")
         gateway = data.get("gateway", "")
+        gateway_mode = data.get("gateway_mode", "auto")
 
         if not all([supernet_id, network, name]):
             return jsonify({"error": "Missing required fields"}), 400
@@ -491,6 +492,7 @@ def allocate_subnet(supernet_id):
     name = data.get("name")
     purpose = data.get("purpose", "")
     assigned_to = data.get("assigned_to", "")
+    gateway_mode = data.get("gateway_mode", "auto")
     
     if not all([allocation_mode, name]):
         return jsonify({"error": "Missing required fields"}), 400
@@ -522,11 +524,14 @@ def allocate_subnet(supernet_id):
             "error": f"No available /{prefix_length} subnet found in supernet {supernet['network']}"
         }), 400
     
-    try:
-        subnet_network = ipaddress.ip_network(available_subnet, strict=False)
-        gateway = str(list(subnet_network.hosts())[0]) if list(subnet_network.hosts()) else str(subnet_network.network_address + 1)
-    except (ipaddress.NetmaskValueError, IndexError):
+    if gateway_mode == "not_applicable":
         gateway = ""
+    else:
+        try:
+            subnet_network = ipaddress.ip_network(available_subnet, strict=False)
+            gateway = str(list(subnet_network.hosts())[0]) if list(subnet_network.hosts()) else str(subnet_network.network_address + 1)
+        except (ipaddress.NetmaskValueError, IndexError):
+            gateway = ""
     
     try:
         cursor = conn.execute(
