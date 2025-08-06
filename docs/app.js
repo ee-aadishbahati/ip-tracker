@@ -365,6 +365,7 @@ function renderSubnets() {
                 </button>
             </td>
         `;
+        row.dataset.supernetId = subnet.supernet_id;
         tbody.appendChild(row);
     });
     
@@ -382,6 +383,11 @@ function filterSubnets() {
         const matchesFilter = !supernetFilter || row.dataset.supernetId === supernetFilter;
         row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
     });
+    
+    if (supernetFilter) {
+        currentSubnetPage = 1;
+        renderSubnets();
+    }
 }
 
 function showSubnetModal() {
@@ -598,6 +604,7 @@ function renderDevices() {
                 </button>
             </td>
         `;
+        row.dataset.subnetId = device.subnet_id;
         tbody.appendChild(row);
     });
     
@@ -615,6 +622,11 @@ function filterDevices() {
         const matchesFilter = !subnetFilter || row.dataset.subnetId === subnetFilter;
         row.style.display = (matchesSearch && matchesFilter) ? '' : 'none';
     });
+    
+    if (subnetFilter) {
+        currentDevicePage = 1;
+        renderDevices();
+    }
 }
 
 function showDeviceModal() {
