@@ -341,6 +341,7 @@ function renderSubnets() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><span class="network-cidr">${subnet.network}</span></td>
+            <td><code>${cidrToSubnetMask(subnet.network)}</code></td>
             <td>${subnet.name}</td>
             <td>${subnet.purpose || '-'}</td>
             <td>${subnet.assigned_to || '-'}</td>
@@ -899,7 +900,18 @@ function getUtilizationClass(utilization) {
     return 'utilization-low';
 }
 
-
+function cidrToSubnetMask(cidr) {
+    const prefixLength = parseInt(cidr.split('/')[1]);
+    
+    const mask = (0xFFFFFFFF << (32 - prefixLength)) >>> 0;
+    
+    return [
+        (mask >>> 24) & 0xFF,
+        (mask >>> 16) & 0xFF,
+        (mask >>> 8) & 0xFF,
+        mask & 0xFF
+    ].join('.');
+}
 
 function createPaginationControls(totalItems, currentPage, paginationId, onPageChange) {
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
