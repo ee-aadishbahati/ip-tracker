@@ -294,8 +294,8 @@ def handle_supernets():
                     })
                 
                 total_hosts = network.num_addresses - 2
-                available_ips = total_subnet_hosts - total_used_ips
-                utilization = (total_used_ips / total_subnet_hosts * 100) if total_subnet_hosts > 0 else 0
+                available_ips = total_hosts - total_subnet_hosts
+                utilization = (total_used_ips / total_hosts * 100) if total_hosts > 0 else 0
                 
                 result.append(
                     {
