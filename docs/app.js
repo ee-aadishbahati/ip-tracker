@@ -36,6 +36,10 @@ async function decryptCredentials() {
 let supernets = [];
 let subnets = [];
 let devices = [];
+let filteredSupernets = [];
+let filteredSubnets = [];
+let filteredDevices = [];
+let currentSupernetPage = 1;
 let changelog = [];
 
 const ITEMS_PER_PAGE = 15;
@@ -188,12 +192,20 @@ async function loadSupernets() {
 }
 
 function renderSupernets() {
+    filteredSupernets = supernets;
+    renderFilteredSupernets();
+}
+
+function renderFilteredSupernets() {
     const tbody = document.getElementById('supernetsTable');
     if (!tbody) return;
     
     tbody.innerHTML = '';
     
-    supernets.forEach(supernet => {
+    const dataToRender = filteredSupernets.length > 0 ? filteredSupernets : supernets;
+    const paginatedSupernets = paginateArray(dataToRender, currentSupernetPage);
+    
+    paginatedSupernets.forEach(supernet => {
         const row = document.createElement('tr');
         
         let subnetDisplay = '';
@@ -243,16 +255,24 @@ function renderSupernets() {
         
         tbody.appendChild(row);
     });
+    
+    createPaginationControls(dataToRender.length, currentSupernetPage, 'supernetsPagination', 'goToSupernetPage');
 }
 
 function filterSupernets() {
     const searchTerm = document.getElementById('supernetSearch').value.toLowerCase();
-    const rows = document.querySelectorAll('#supernetsTable tr');
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    filteredSupernets = supernets.filter(supernet => {
+        const matchesSearch = !searchTerm || 
+            supernet.network.toLowerCase().includes(searchTerm) ||
+            supernet.name.toLowerCase().includes(searchTerm) ||
+            (supernet.description && supernet.description.toLowerCase().includes(searchTerm));
+        
+        return matchesSearch;
     });
+    
+    currentSupernetPage = 1;
+    renderFilteredSupernets();
 }
 
 function showSupernetModal() {
@@ -392,7 +412,6 @@ function renderFilteredSubnets() {
     createPaginationControls(dataToRender.length, currentSubnetPage, 'subnetsPagination', 'goToSubnetPage');
 }
 
-let filteredSubnets = [];
 
 function filterSubnets() {
     const searchTerm = document.getElementById('subnetSearch').value.toLowerCase();
@@ -674,7 +693,6 @@ function renderFilteredDevices() {
     createPaginationControls(dataToRender.length, currentDevicePage, 'devicesPagination', 'goToDevicePage');
 }
 
-let filteredDevices = [];
 
 function filterDevices() {
     const searchTerm = document.getElementById('deviceSearch').value.toLowerCase();
@@ -1375,4 +1393,13 @@ function clearAdvancedSearch() {
     }
     
     advancedSearchResults = [];
+}
+
+function goToSupernetPage(page) {
+    currentSupernetPage = page;
+    if (filteredSupernets.length > 0) {
+        renderFilteredSupernets();
+    } else {
+        renderSupernets();
+    }
 }
