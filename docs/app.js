@@ -2,7 +2,7 @@
 const API_BASE_URL = 'https://ip-tracker.fly.dev';
 
 const AUTH_CONFIG = {
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZWUtaXB0cmFja2VyIiwicGFzcyI6Im5RRTBrNTRQJSEhTlZHIiwiZXhwIjoxNzg2MDg1ODQ1LCJpc3MiOiJpcC10cmFja2VyIn0.6gW-8O4GULe_e-ffEzOcvmJ8OxX4K7exrWZiSFcL6QE',
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiZWUtaXB0cmFja2VyIiwicGFzcyI6Im5RRTBrNTRQJSEhTlZHIiwiZXhwIjoyMDY5OTEwNjEyLCJpc3MiOiJpcC10cmFja2VyIn0.XE6vb6j34wtjkYLxpMw_baJevpXulsQ0IqSQYD5zKIQ',
     secret: 'ip-tracker-2025-secure-key'
 };
 
