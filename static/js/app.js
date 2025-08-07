@@ -3,6 +3,12 @@ const API_BASE_URL = 'https://ip-tracker.fly.dev';
 let supernets = [];
 let subnets = [];
 let devices = [];
+let filteredSupernets = [];
+let filteredSubnets = [];
+let filteredDevices = [];
+let currentSupernetPage = 1;
+let currentSubnetPage = 1;
+let currentDevicePage = 1;
 let dashboardStats = {};
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -165,10 +171,20 @@ async function loadChangelog() {
 }
 
 function renderSupernets() {
+    filteredSupernets = supernets;
+    renderFilteredSupernets();
+}
+
+function renderFilteredSupernets() {
     const tbody = document.getElementById('supernetsTable');
+    if (!tbody) return;
+    
     tbody.innerHTML = '';
     
-    supernets.forEach(supernet => {
+    const dataToRender = filteredSupernets.length > 0 ? filteredSupernets : supernets;
+    const paginatedSupernets = paginateArray(dataToRender, currentSupernetPage);
+    
+    paginatedSupernets.forEach(supernet => {
         const utilizationClass = getUtilizationClass(supernet.utilization || 0);
         const row = document.createElement('tr');
         
@@ -214,6 +230,8 @@ function renderSupernets() {
         
         tbody.appendChild(row);
     });
+    
+    createPaginationControls(dataToRender.length, currentSupernetPage, 'supernetsPagination', 'goToSupernetPage');
 }
 
 function renderSubnets() {
@@ -729,15 +747,20 @@ async function importData() {
 
 function filterSupernets() {
     const searchTerm = document.getElementById('supernetSearch').value.toLowerCase();
-    const rows = document.querySelectorAll('#supernetsTable tr');
     
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    filteredSupernets = supernets.filter(supernet => {
+        const matchesSearch = !searchTerm || 
+            supernet.network.toLowerCase().includes(searchTerm) ||
+            supernet.name.toLowerCase().includes(searchTerm) ||
+            (supernet.description && supernet.description.toLowerCase().includes(searchTerm));
+        
+        return matchesSearch;
     });
+    
+    currentSupernetPage = 1;
+    renderFilteredSupernets();
 }
 
-let filteredSubnets = [];
 
 function filterSubnets() {
     const searchTerm = document.getElementById('subnetSearch').value.toLowerCase();
@@ -755,10 +778,9 @@ function filterSubnets() {
         return matchesSearch && matchesFilter;
     });
     
+    currentSubnetPage = 1;
     renderFilteredSubnets();
 }
-
-let filteredDevices = [];
 
 function filterDevices() {
     const searchTerm = document.getElementById('deviceSearch').value.toLowerCase();
@@ -772,13 +794,14 @@ function filterDevices() {
             (device.role && device.role.toLowerCase().includes(searchTerm)) ||
             (device.location && device.location.toLowerCase().includes(searchTerm)) ||
             (device.port_detail && device.port_detail.toLowerCase().includes(searchTerm)) ||
-            (device.subnet_network && device.subnet_network.toLowerCase().includes(searchTerm));
+            (device.subnet_name && device.subnet_name.toLowerCase().includes(searchTerm));
         
         const matchesFilter = !subnetFilter || device.subnet_id.toString() === subnetFilter;
         
         return matchesSearch && matchesFilter;
     });
     
+    currentDevicePage = 1;
     renderFilteredDevices();
 }
 
@@ -1129,4 +1152,51 @@ function clearAdvancedSearch() {
     }
     
     advancedSearchResults = [];
+}
+
+function goToSupernetPage(page) {
+    currentSupernetPage = page;
+    if (filteredSupernets.length > 0) {
+        renderFilteredSupernets();
+    } else {
+        renderSupernets();
+    }
+}
+
+function paginateArray(array, page, itemsPerPage = 15) {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return array.slice(startIndex, endIndex);
+}
+
+function createPaginationControls(totalItems, currentPage, containerId, functionName, itemsPerPage = 15) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<nav><ul class="pagination pagination-sm justify-content-center">';
+    
+    if (currentPage > 1) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="${functionName}(${currentPage - 1}); return false;">Previous</a></li>`;
+    }
+    
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+            html += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+        } else {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="${functionName}(${i}); return false;">${i}</a></li>`;
+        }
+    }
+    
+    if (currentPage < totalPages) {
+        html += `<li class="page-item"><a class="page-link" href="#" onclick="${functionName}(${currentPage + 1}); return false;">Next</a></li>`;
+    }
+    
+    html += '</ul></nav>';
+    container.innerHTML = html;
 }
